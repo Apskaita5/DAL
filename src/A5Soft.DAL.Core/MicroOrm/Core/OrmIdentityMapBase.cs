@@ -194,6 +194,8 @@ namespace A5Soft.DAL.Core.MicroOrm.Core
                 || (!ScopeIsFlag && scope.Value == PrimaryKeyUpdateScope);
         }
 
+        internal abstract object GetPrimaryKey(T instance);
+
         #endregion
 
     }

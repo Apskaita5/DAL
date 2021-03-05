@@ -3,6 +3,8 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace A5Soft.DAL.Core.MicroOrm.Core
 {
@@ -19,6 +21,7 @@ namespace A5Soft.DAL.Core.MicroOrm.Core
 
         private readonly OrmIdentityMapBase<T> _identity;
         private readonly List<OrmFieldMapBase<T>> _fields;
+        private readonly List<IChildMap<T>> _children;
         private readonly FieldMapInsertedAt<T> _insertedAt;
         private readonly FieldMapInsertedBy<T> _insertedBy;
         private readonly FieldMapUpdatedAt<T> _updatedAt;
@@ -42,6 +45,8 @@ namespace A5Soft.DAL.Core.MicroOrm.Core
 
             _fields = staticFieldsInfo.Where(f => typeof(OrmFieldMapBase<T>).IsAssignableFrom(f.FieldType))
                 .Select(f => (OrmFieldMapBase<T>)f.GetValue(null)).ToList();
+            _children = staticFieldsInfo.Where(f => typeof(IChildMap<T>).IsAssignableFrom(f.FieldType))
+                .Select(f => (IChildMap<T>)f.GetValue(null)).ToList();
 
             if (null == _fields || _fields.Count < 1) throw new NotSupportedException(
                 string.Format(Properties.Resources.NoFieldMapsForMicroOrmException, typeof(T).FullName));
@@ -240,7 +245,7 @@ namespace A5Soft.DAL.Core.MicroOrm.Core
             }
             return _updateStatements.GetOrAdd(scope.Value, s => updateStatementFactory(this, scope));
         }
-
+                
         #endregion
 
         #region Mapping Methods
@@ -330,7 +335,9 @@ namespace A5Soft.DAL.Core.MicroOrm.Core
             if (_identity.PrimaryKeyIsInUpdateScope(scope)) 
                 result.Add(_identity.PrimaryKeyFieldName);
 
-            result.AddRange(_fields.Where(f => f.IsInUpdateScope(scope, _identity.ScopeIsFlag))
+            result.AddRange(_fields.Where(f => 
+                    f.PersistenceType.HasFlag(FieldPersistenceType.Update) 
+                    && f.UpdateScope.IsInUpdateScope(scope, _identity.ScopeIsFlag))
                 .Select(f => f.DbFieldName));
             
             return result.ToArray();
@@ -351,7 +358,8 @@ namespace A5Soft.DAL.Core.MicroOrm.Core
             if (_identity.PrimaryKeyIsInUpdateScope(scope)) 
                 result.Add(_identity.GetPrimaryKeyParamForUpdateSet(instance));
 
-            result.AddRange(_fields.Where(f => f.IsInUpdateScope(scope, _identity.ScopeIsFlag))
+            result.AddRange(_fields.Where(f => f.PersistenceType.HasFlag(FieldPersistenceType.Update)
+                    && f.UpdateScope.IsInUpdateScope(scope, _identity.ScopeIsFlag))
                 .Select(f => f.GetParam(instance)));
 
             result.Add(_identity.GetPrimaryKeyParamForUpdateWhere(instance, PrimaryKeyUpdateWhereParamName));
@@ -495,6 +503,47 @@ namespace A5Soft.DAL.Core.MicroOrm.Core
                 .Where(f => f.PersistenceType.HasFlag(FieldPersistenceType.Init)))
                 f.SetValue(instance, reader);
         }
+
+        // CHILD FIELDS
+
+        /// <summary>
+        /// Loads child fields data from a database using MicroOrm service specified.
+        /// </summary>
+        /// <param name="instance">a parent instance to load the child fields for</param>
+        /// <param name="service">a MicroOrm service to use for loading data</param>
+        /// <param name="ct">a cancellation token (if any)</param>
+        public async Task LoadChildren(T instance, IOrmService service, CancellationToken ct = default)
+        {
+            var primaryKey = _identity.GetPrimaryKey(instance);
+            foreach (var child in _children)
+            {
+                await child.LoadChildAsync(instance, primaryKey, service, ct);
+            }
+        }
+
+        /// <summary>
+        /// Saves (inserts, updates or deletes) child fields (child entities) data to a database.
+        /// </summary>
+        /// <param name="instance">a parent instance to save the child fields for</param>
+        /// <param name="userId">a user identifier (e.g. email) for audit field UpdatedBy 
+        /// (only applicable if the child entity implements standard audit fields)</param>
+        /// <param name="scope">a scope of the update operation; a business objects can define
+        /// different update scopes (different collections of properties) as an ENUM
+        /// which nicely converts into int.</param>
+        /// <param name="service">a MicroOrm service to use for saving data</param>
+        public async Task SaveChildrenAsync(T instance, string userId, int? scope, IOrmService service)
+        {
+            var primaryKey = _identity.GetPrimaryKey(instance);
+            foreach (var child in _children)
+            {
+                await child.SaveChildAsync(instance, primaryKey, userId, scope, _identity.ScopeIsFlag, service);
+            }
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether the entity has any child fields.
+        /// </summary>
+        public bool HasChildren => _children.Count > 0;
 
         #endregion
 

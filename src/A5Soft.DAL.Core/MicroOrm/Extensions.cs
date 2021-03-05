@@ -62,5 +62,12 @@ namespace A5Soft.DAL.Core.MicroOrm
             return dictionary.TryGetValue(key, out TValue value) ? value : default(TValue);
         }
 
+        internal static bool IsInUpdateScope(this int? fieldScope, int? updateScope, bool scopeIsFlag)
+        {
+            return !updateScope.HasValue || !fieldScope.HasValue 
+                || (scopeIsFlag && ((updateScope.Value & fieldScope.Value) != 0))
+                || (!scopeIsFlag && updateScope.Value == fieldScope.Value);
+        }
+
     }
 }

@@ -76,5 +76,9 @@ namespace A5Soft.DAL.Core.MicroOrm
             PrimaryKeySetter(instance, null);
         }
 
+        internal override object GetPrimaryKey(T instance)
+        {
+            return PrimaryKeyGetter(instance);
+        }
     }
 }

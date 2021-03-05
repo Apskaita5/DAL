@@ -56,5 +56,9 @@ namespace A5Soft.DAL.Core.MicroOrm
             throw new NotSupportedException();
         }
 
+        internal override object GetPrimaryKey(T instance)
+        {
+            throw new NotSupportedException();
+        }
     }
 }

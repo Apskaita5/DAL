@@ -52,48 +52,62 @@ namespace A5Soft.DAL.Core.MicroOrm.Core
         public async Task<T> FetchEntityAsync<T>(object id, CancellationToken cancellationToken = default) where T : class
         {
             if (id.IsNull()) throw new ArgumentNullException(nameof(id));
-             
+
+            var map = GetOrCreateMap<T>();
+
             var reader = await GetReaderAsync<T>(id, cancellationToken).ConfigureAwait(false);
+
+            T result;
 
             try
             {
                 if (!await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
                     return null;
 
-                var map = GetOrCreateMap<T>();
-
-                return map.LoadInstance(reader);
+                result = map.LoadInstance(reader);
             }
             finally
             {
                 await reader.CloseAsync();
             }
+
+            await map.LoadChildren(result, this, cancellationToken).ConfigureAwait(false);
+
+            return result;
         }
 
         /// <inheritdoc cref="IOrmService.FetchChildEntitiesAsync{T}"/>
         public async Task<List<T>> FetchChildEntitiesAsync<T>(object parentId, 
             CancellationToken cancellationToken = default) where T : class
         {
+            var map = GetOrCreateMap<T>();
+
             var reader = await GetReaderByParentAsync<T>(parentId, cancellationToken)
                 .ConfigureAwait(false);
+                                                   
+            var result = new List<T>();
 
             try
             {
-                var map = GetOrCreateMap<T>();
-
-                var result = new List<T>();
-
                 while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
                 {
                     result.Add(map.LoadInstance(reader));
                 }
-
-                return result;
             }
             finally
             {
                 await reader.CloseAsync();
             }
+
+            if (map.HasChildren)
+            {
+                foreach (var child in result)
+                {
+                    await map.LoadChildren(child, this, cancellationToken).ConfigureAwait(false);
+                }
+            }
+
+            return result;
         }
 
         /// <inheritdoc cref="IOrmService.QueryAsync{T}"/>
@@ -125,25 +139,33 @@ namespace A5Soft.DAL.Core.MicroOrm.Core
         /// <inheritdoc cref="IOrmService.FetchAllEntitiesAsync{T}"/>
         public async Task<List<T>> FetchAllEntitiesAsync<T>(CancellationToken cancellationToken = default) where T : class
         {
+            var map = GetOrCreateMap<T>();
+
             var reader = await GetReaderForAllAsync<T>(cancellationToken).ConfigureAwait(false);
+
+            var result = new List<T>();
 
             try
             {
-                var map = GetOrCreateMap<T>();
-
-                var result = new List<T>();
-
                 while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
                 {
                     result.Add(map.LoadInstance(reader));
                 }
-
-                return result;
             }
             finally
             {
                 await reader.CloseAsync();
             }
+
+            if (map.HasChildren)
+            {
+                foreach (var child in result)
+                {
+                    await map.LoadChildren(child, this, cancellationToken);
+                }
+            }
+
+            return result;
         }
 
         /// <inheritdoc cref="IOrmService.FetchTableAsync{T}"/>
@@ -504,6 +526,8 @@ namespace A5Soft.DAL.Core.MicroOrm.Core
                     .ConfigureAwait(false);
                 map.UpdatePrimaryKey(instance);
             }
+
+            await map.SaveChildrenAsync(instance, userId, null, this).ConfigureAwait(false);
         }
 
         /// <inheritdoc cref="IOrmService.ExecuteInsertChildAsync{T}"/>
@@ -519,7 +543,7 @@ namespace A5Soft.DAL.Core.MicroOrm.Core
 
             var extraParameters = new SqlParam[]{ SqlParam.Create(map.ParentIdFieldName, parentId) };
 
-            await ExecuteInsertAsync(instance, userId, extraParameters);
+            await ExecuteInsertAsync(instance, userId, extraParameters).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -552,6 +576,8 @@ namespace A5Soft.DAL.Core.MicroOrm.Core
                 .ConfigureAwait(false);
 
             if (map.PrimaryKeyUpdatable) map.UpdatePrimaryKey(instance);
+
+            await map.SaveChildrenAsync(instance, userId, scope, this).ConfigureAwait(false);
 
             return result;
         }

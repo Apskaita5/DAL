@@ -113,5 +113,9 @@ namespace A5Soft.DAL.Core.MicroOrm
             if (PrimaryKeyUpdatable) UpdatedPrimaryKeySetter(instance, null);
         }
 
+        internal override object GetPrimaryKey(T instance)
+        {
+            return PrimaryKeyGetter(instance);
+        }
     }
 }

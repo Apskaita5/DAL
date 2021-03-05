@@ -66,7 +66,7 @@ namespace A5Soft.DAL.Core.MicroOrm.Core
         /// If multiple scope combinations are used, the enum should be defined as [Flags].
         /// in that case: (a) a field should only be assigned to a single scope;
         /// (b) a bitwise check is used: (fieldScope & requestedScope) != 0;
-        /// (c) <see cref="OrmIdentityMap{T}.ScopeIsFlag"/> should be set to true.
+        /// (c) <see cref="OrmIdentityMapBase{T}.ScopeIsFlag"/> should be set to true.
         /// </summary>
         public int? UpdateScope { get; }
                       
@@ -104,19 +104,7 @@ namespace A5Soft.DAL.Core.MicroOrm.Core
                 $"Database field name is not set for the property {PropName} in class {typeof(T).FullName}.");
             return (DbFieldName, PropName);
         }
-
-        /// <summary>
-        /// Gets a value indicating whether the field shall be updated within the scopes given.
-        /// </summary>
-        /// <param name="scopes">scopes that shall be updated; null scopes => update all updateable fields</param>
-        /// <param name="scopeIsFlag">whether the scope is flag enum</param>
-        internal bool IsInUpdateScope(int? scopes, bool scopeIsFlag)
-        {
-            if (!PersistenceType.HasFlag(FieldPersistenceType.Update)) return false;
-            return !scopes.HasValue || null == UpdateScope || (scopeIsFlag && ((scopes.Value & UpdateScope) != 0))
-                || (!scopeIsFlag && scopes.Value == UpdateScope);
-        }
-
+             
         #endregion
 
     }
