@@ -59,7 +59,7 @@ namespace A5Soft.DAL.Core.MicroOrm
 
         internal static TValue GetValueOrDefault<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key)
         {
-            return dictionary.TryGetValue(key, out TValue value) ? value : default(TValue);
+            return dictionary.TryGetValue(key, out TValue value) ? value : default;
         }
 
         internal static bool IsInUpdateScope(this int? fieldScope, int? updateScope, bool scopeIsFlag)

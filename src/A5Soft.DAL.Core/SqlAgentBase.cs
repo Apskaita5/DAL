@@ -149,7 +149,7 @@ namespace A5Soft.DAL.Core
         {
             if (null == method) throw new ArgumentNullException(nameof(method));
 
-            var transaction = await CaptureOrInitTransaction(method, cancellationToken);
+            var transaction = await CaptureOrInitTransaction(cancellationToken);
             // transaction shall be registered within async context of this method
             if (null != transaction) RegisterTransaction(transaction);
 
@@ -177,13 +177,13 @@ namespace A5Soft.DAL.Core
             }
         }
 
-        /// <inheritdoc cref="ISqlAgent.FetchInTransactionAsync"/>
+        /// <inheritdoc cref="ISqlAgent.FetchInTransactionAsync{TResult}"/>
         public async Task<TResult> FetchInTransactionAsync<TResult>(Func<Task<TResult>> method,
             CancellationToken cancellationToken = default)
         {
             if (null == method) throw new ArgumentNullException(nameof(method));
 
-            var transaction = await CaptureOrInitTransaction(method, cancellationToken);
+            var transaction = await CaptureOrInitTransaction(cancellationToken);
             // transaction shall be registered within async context of this method
             if (null != transaction) RegisterTransaction(transaction);
 
@@ -215,7 +215,7 @@ namespace A5Soft.DAL.Core
         }
 
         
-        private async Task<object> CaptureOrInitTransaction<T>(T method, CancellationToken ct)
+        private async Task<object> CaptureOrInitTransaction(CancellationToken ct)
         {
             if (IsTransactionInProgress) return null;
             return await TransactionBeginAsync(ct).ConfigureAwait(false);

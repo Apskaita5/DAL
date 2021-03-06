@@ -13,19 +13,19 @@ namespace A5Soft.DAL.Core
 
         public const string DefaultColumnName = "ColumnName";
 
-        public readonly Type[] SupportedTypes = new Type[] { typeof(Int16),typeof(Int32),typeof(Int64),
-            typeof(UInt16), typeof(UInt32), typeof(UInt64), typeof(Byte), typeof(SByte), typeof(string),
-            typeof(Boolean), typeof(Char), typeof(DateTime), typeof(Decimal), typeof(Double),
-            typeof(Single), typeof(Guid), typeof(TimeSpan), typeof(Byte[])};
+        public readonly Type[] SupportedTypes = new Type[] { typeof(short),typeof(int),typeof(long),
+            typeof(ushort), typeof(uint), typeof(ulong), typeof(byte), typeof(sbyte), typeof(string),
+            typeof(bool), typeof(char), typeof(DateTime), typeof(decimal), typeof(double),
+            typeof(float), typeof(Guid), typeof(TimeSpan), typeof(byte[])};
 
         #region Private Fields
 
         private string _caption = string.Empty;
         private string _columnName = string.Empty;
-        private Type _dataType = null;
+        private readonly Type _dataType;
         private string _nativeDataType = string.Empty;
-        private bool _readOnly = false;
-        private LightDataTable _table = null;
+        private bool _readOnly;
+        private LightDataTable _table;
 
         #endregion
         

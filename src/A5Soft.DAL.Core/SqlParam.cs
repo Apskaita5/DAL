@@ -35,10 +35,9 @@ namespace A5Soft.DAL.Core
         private SqlParam(string name, object value, Type valueType, bool replaceInQuery)
         {
             if (name.IsNullOrWhiteSpace()) throw new ArgumentNullException(nameof(name));
-            if (null == valueType) throw new ArgumentNullException(nameof(valueType));
 
             Name = name;
-            ValueType = valueType;
+            ValueType = valueType ?? throw new ArgumentNullException(nameof(valueType)); ;
             Value = value;
             ReplaceInQuery = replaceInQuery;
         }
