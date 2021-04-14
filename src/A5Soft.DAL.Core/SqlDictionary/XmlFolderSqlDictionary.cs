@@ -22,9 +22,9 @@ namespace A5Soft.DAL.Core.SqlDictionary
 
 
         /// <summary>
-        /// Gets a path to the folder where the relevant SqlRepository files are located
+        /// Gets path to the folders where the relevant SqlRepository files are located
         /// </summary>
-        public string FolderPath { get; }
+        public IEnumerable<string> Folders { get; }
 
 
         private XmlFolderSqlDictionary() { }
@@ -32,18 +32,18 @@ namespace A5Soft.DAL.Core.SqlDictionary
         /// <summary>
         /// Creates a new instance of SQL dictionary.
         /// </summary>
-        /// <param name="folderPath">path to the folder where the relevant SqlRepository files are located</param>
-        public XmlFolderSqlDictionary(string folderPath) : this(folderPath, false) { }
+        /// <param name="folders">path to the folders where the relevant SqlRepository files are located</param>
+        public XmlFolderSqlDictionary(IEnumerable<string> folders) : this(folders, false) { }
 
         /// <summary>
         /// Creates a new instance of SQL dictionary.
         /// </summary>
-        /// <param name="folderPath">path to the folder where the relevant SqlRepository files are located</param>
+        /// <param name="folders">path to the folders where the relevant SqlRepository files are located</param>
         /// <param name="init">whether to initialize dictionary, i.e. load data from files</param>
-        public XmlFolderSqlDictionary(string folderPath, bool init)
+        public XmlFolderSqlDictionary(IEnumerable<string> folders, bool init)
         {
-            if (folderPath.IsNullOrWhiteSpace()) throw new ArgumentNullException(nameof(folderPath));
-            FolderPath = folderPath;
+            if (null == folders || !folders.Any()) throw new ArgumentNullException(nameof(folders));
+            Folders = folders;
             if (init) Initialize();
         }
 
@@ -112,9 +112,16 @@ namespace A5Soft.DAL.Core.SqlDictionary
 
         private IEnumerable<string> GetSqlRepositoryFiles()
         {
-            return Directory.GetFiles(FolderPath, "*.*", SearchOption.AllDirectories)
-                .Where(f => (Path.GetExtension(f) ?? string.Empty).StartsWith(
-                    Constants.SqlRepositoryFileExtension, StringComparison.OrdinalIgnoreCase));
+            foreach (var folder in Folders)
+            {
+                foreach (var file in Directory.GetFiles(folder, "*.*", 
+                        SearchOption.AllDirectories)
+                    .Where(f => (Path.GetExtension(f) ?? string.Empty).StartsWith(
+                        Constants.SqlRepositoryFileExtension, StringComparison.OrdinalIgnoreCase)))
+                {
+                    yield return file;
+                }
+            }
         }
 
     }

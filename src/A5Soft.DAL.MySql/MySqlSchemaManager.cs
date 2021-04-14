@@ -332,28 +332,36 @@ namespace A5Soft.DAL.MySql
             MySqlConnection conn, CancellationToken cancellationToken)
         {
 
-            var result = new Dictionary<string, Dictionary<string, ForeignKeyData>>(StringComparer.OrdinalIgnoreCase);
+            // because TABLE_CONSTRAINTS.CONSTRAINT_NAME and KEY_COLUMN_USAGE.CONSTRAINT_NAME
+            // have different collations for MySql server 8, cannot join
+            var fkRefList = (await MyAgent.FetchUsingConnectionAsync(conn, @"
+                SELECT i.CONSTRAINT_NAME FROM information_schema.TABLE_CONSTRAINTS i 
+                WHERE i.CONSTRAINT_TYPE = 'FOREIGN KEY' AND i.TABLE_SCHEMA = DATABASE();", cancellationToken))
+                .Rows.Select(r => r.GetString(0)).ToList();
 
             var indexTable = await MyAgent.FetchUsingConnectionAsync(conn, @"
-                SELECT i.TABLE_NAME, k.COLUMN_NAME, i.CONSTRAINT_NAME, k.REFERENCED_TABLE_NAME, k.REFERENCED_COLUMN_NAME 
-                FROM information_schema.TABLE_CONSTRAINTS i 
-                LEFT JOIN information_schema.KEY_COLUMN_USAGE k ON i.CONSTRAINT_NAME = k.CONSTRAINT_NAME 
-                WHERE i.CONSTRAINT_TYPE = 'FOREIGN KEY' AND i.TABLE_SCHEMA = DATABASE();",
+                SELECT TABLE_NAME, COLUMN_NAME, CONSTRAINT_NAME, REFERENCED_TABLE_NAME, REFERENCED_COLUMN_NAME 
+                FROM information_schema.KEY_COLUMN_USAGE WHERE TABLE_SCHEMA = DATABASE() AND NOT REFERENCED_TABLE_SCHEMA IS NULL;",
                 cancellationToken).ConfigureAwait(false);
 
+            var result = new Dictionary<string, Dictionary<string, ForeignKeyData>>(StringComparer.OrdinalIgnoreCase);
+            
             foreach (var row in indexTable.Rows)
             {
-                var current = GetOrCreateFKTableDictionary(result, 
-                    row.GetString(0).Trim());
-                if (!current.ContainsKey(row.GetString(1).Trim()))
+                if (fkRefList.Contains(row.GetString(2).Trim()))
                 {
-                    var fkInfo = new ForeignKeyData
+                    var current = GetOrCreateFKTableDictionary(result,
+                        row.GetString(0).Trim());
+                    if (!current.ContainsKey(row.GetString(1).Trim()))
                     {
-                        Name = row.GetString(2).Trim(),
-                        RefTable = row.GetString(3).Trim(),
-                        RefField = row.GetString(4).Trim()
-                    };
-                    current.Add(row.GetString(1).Trim(), fkInfo);
+                        var fkInfo = new ForeignKeyData
+                        {
+                            Name = row.GetString(2).Trim(),
+                            RefTable = row.GetString(3).Trim(),
+                            RefField = row.GetString(4).Trim()
+                        };
+                        current.Add(row.GetString(1).Trim(), fkInfo);
+                    }
                 }
             }
 

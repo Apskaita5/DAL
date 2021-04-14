@@ -3,10 +3,10 @@ using System;
 
 namespace A5Soft.DAL.Core.MicroOrm
 {
-    public sealed class OrmIdentityMapParentInt32<T> : OrmIdentityMapBase<T> where T : class
+    public sealed class IdentityMapParentInt32<T> : OrmIdentityMapBase<T> where T : class
     {
 
-        public OrmIdentityMapParentInt32(string tableName, string primaryKeyFieldName,
+        public IdentityMapParentInt32(string tableName, string primaryKeyFieldName,
             string primaryKeyPropName, Func<T> factoryMethod, Func<T, int?> primaryKeyGetter,
             Action<T, int?> primaryKeySetter, Func<T, int?> updatedPrimaryKeyGetter,
             Action<T, int?> updatedPrimaryKeySetter, string fetchQueryToken = null,
@@ -22,7 +22,7 @@ namespace A5Soft.DAL.Core.MicroOrm
             PrimaryKeyUpdatable = true;
         }
 
-        public OrmIdentityMapParentInt32(string tableName, string primaryKeyFieldName,
+        public IdentityMapParentInt32(string tableName, string primaryKeyFieldName,
             string primaryKeyPropName, Func<T> factoryMethod, Func<T, int?> primaryKeyGetter, 
             Action<T, int?> primaryKeySetter, string fetchQueryToken = null, string fetchAllQueryToken = null, 
             string initQueryToken = null, bool scopeIsFlag = false)

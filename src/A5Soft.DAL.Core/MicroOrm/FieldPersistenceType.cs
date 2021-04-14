@@ -26,6 +26,22 @@ namespace A5Soft.DAL.Core.MicroOrm
         /// <summary>
         /// updateable field
         /// </summary>
-        Update = 8
+        Update = 8,
+
+        /// <summary>
+        /// initializable, readable, insertable and updateable
+        /// </summary>
+        Full = 15,
+
+        /// <summary>
+        /// initializable and readable
+        /// </summary>
+        InitAndRead = 3,
+
+        /// <summary>
+        /// readable, insertable and updateable
+        /// </summary>
+        CRUD = 14
+
     }
 }

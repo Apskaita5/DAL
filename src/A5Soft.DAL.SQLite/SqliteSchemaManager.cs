@@ -173,7 +173,7 @@ namespace A5Soft.DAL.SQLite
 
             if (row.IsNull()) return false;
 
-            schema.IndexType = IndexType.ForeignKey;
+            schema.IndexType = schema.IndexType == IndexType.Primary ? IndexType.ForeignPrimary : IndexType.ForeignKey;
 
             schema.IndexName = $"{table}_{schema.Name}_fk";
 

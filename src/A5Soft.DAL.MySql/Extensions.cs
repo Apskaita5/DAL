@@ -407,15 +407,16 @@ namespace A5Soft.DAL.MySql
             tblName = tblName.ToConventional(agent);
             var indexName = schema.IndexName.ToConventional(agent);
             var fieldName = schema.Name.ToConventional(agent);
-            var refTable = schema.RefTable.ToConventional(agent);
-            var refField = schema.RefField.ToConventional(agent);
-            var onDelete = schema.OnDeleteForeignKey.GetNativeActionType();
-            var onUpdate = schema.OnUpdateForeignKey.GetNativeActionType();
-
+            
             string result;
 
             if (schema.IndexType.IsForeignKey())
             {
+                var refTable = schema.RefTable.ToConventional(agent);
+                var refField = schema.RefField.ToConventional(agent);
+                var onDelete = schema.OnDeleteForeignKey.GetNativeActionType();
+                var onUpdate = schema.OnUpdateForeignKey.GetNativeActionType();
+
                 result = $"ALTER TABLE `{dbName}`.`{tblName}` ADD CONSTRAINT `{indexName}` FOREIGN KEY `{indexName}`(`{fieldName}`) REFERENCES `{refTable}`(`{refField}`) ON DELETE {onDelete} ON UPDATE {onUpdate};";
             }
             else

@@ -100,12 +100,36 @@ namespace A5Soft.DAL.MySql
             if (CurrentDatabase.IsNullOrWhiteSpace()) throw new InvalidOperationException(
                 Properties.Resources.CurrentDatabaseNullException);
 
-            var table = await ExecuteAsync<LightDataTable>(
-                    $"SHOW DATABASES LIKE '{CurrentDatabase.Trim()}';",
-                    null, cancellationToken, ignoreTransaction: true, withoutDatabase: true)
-                .ConfigureAwait(false);
+            var conn = await OpenConnectionAsync(true).ConfigureAwait(false);
 
-            return (table.Rows.Count > 0);
+            bool result; 
+
+            try
+            {
+                using (var command = new MySqlCommand())
+                {
+                    command.Connection = conn;
+                    command.CommandTimeout = QueryTimeOut;
+                    command.CommandText = $"SHOW DATABASES LIKE '{CurrentDatabase.Trim()}';";
+
+                    var reader = await command.ExecuteReaderAsync(cancellationToken)
+                        .ConfigureAwait(false);
+                    var table = await LightDataTable.CreateAsync(reader, cancellationToken)
+                        .ConfigureAwait(false);
+
+                    result = table.Rows.Count > 0;
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex.WrapSqlException($"SHOW DATABASES LIKE '{CurrentDatabase.Trim()}';");
+            }
+            finally
+            {
+                await conn.CloseAndDisposeAsync().ConfigureAwait(false);
+            }
+
+            return result;
         }
 
         /// <inheritdoc cref="ISqlAgent.DatabaseEmptyAsync"/>

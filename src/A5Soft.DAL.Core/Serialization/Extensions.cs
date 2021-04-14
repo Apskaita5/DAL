@@ -215,29 +215,26 @@ namespace A5Soft.DAL.Core.Serialization
         /// and creates an aggregate schema for the extensions specified
         /// (or all of the schemas if the extensions are not specified (null)).
         /// </summary>
-        /// <param name="folderPath">a path to the file</param>
+        /// <param name="files">path to the files</param>
         /// <param name="forExtensions">identifiers (guid's) of the extensions to use
         /// (if null, will use all the available schemas)</param>
-        public static DbSchema.Schema ReadAggregateDbSchemaFromXmlFolder(string folderPath, 
+        public static DbSchema.Schema ReadAggregateDbSchema(IEnumerable<string> files, 
             Guid[] forExtensions = null)
         {
-            if (folderPath.IsNullOrWhiteSpace()) throw new ArgumentNullException(nameof(folderPath));
+            if (null == files) throw new ArgumentNullException(nameof(files));
 
             var result = new List<DbSchema.Schema>();
 
-            foreach (var filePath in Directory.GetFiles(folderPath,
-                "*.*", SearchOption.AllDirectories))
+            foreach (var filePath in files)
             {
-                var fileExtension = System.IO.Path.GetExtension(filePath);
-                if (fileExtension != null && fileExtension.ToLower().StartsWith(
-                    Constants.DbSchemaFileExtension))
-                {
+                var item = ReadDbSchemaFromXmlFile(filePath);
+                if (null == forExtensions || item.ExtensionGuid.IsNullOrWhiteSpace() 
+                    || forExtensions.Contains(new Guid(item.ExtensionGuid)))
                     result.Add(ReadDbSchemaFromXmlFile(filePath));
-                }
             }
 
             if (result.Count < 1)
-                throw new InvalidOperationException(string.Format(Properties.Resources.NoFilesInFolder, folderPath));
+                throw new InvalidOperationException("No schemas found.");
 
             return new DbSchema.Schema(result, forExtensions);
         }

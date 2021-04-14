@@ -221,7 +221,7 @@ namespace A5Soft.DAL.SQLite
                 case DbDataType.BlobLong:
                     return NativeType_Blob;
                 case DbDataType.Enum:
-                    return NativeType_Blob;
+                    return NativeType_Text;
                 default:
                     throw new NotImplementedException(string.Format(Properties.Resources.EnumValueNotImplementedException,
                         schema.DataType.ToString()));
@@ -389,7 +389,7 @@ namespace A5Soft.DAL.SQLite
                 }
             }
 
-            if (schema.IndexType == IndexType.Primary)
+            if (schema.IndexType == IndexType.Primary || schema.IndexType == IndexType.ForeignPrimary)
             {
                 if (schema.Autoincrement)
                 {

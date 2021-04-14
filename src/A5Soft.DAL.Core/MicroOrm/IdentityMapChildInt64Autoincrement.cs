@@ -3,7 +3,7 @@ using A5Soft.DAL.Core.MicroOrm.Core;
 
 namespace A5Soft.DAL.Core.MicroOrm
 {
-    class IdentityMapChildInt64Autoincrement<T> : OrmIdentityMapBase<T> where T : class
+    public sealed class IdentityMapChildInt64Autoincrement<T> : OrmIdentityMapBase<T> where T : class
     {
 
         public IdentityMapChildInt64Autoincrement(string tableName, string primaryKeyFieldName,
