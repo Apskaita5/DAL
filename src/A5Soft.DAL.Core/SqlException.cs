@@ -5,6 +5,7 @@ namespace A5Soft.DAL.Core
     /// <summary>
     /// Represents an abstract exception that has been thrown by some SQL implementation.
     /// </summary>
+    [Serializable]
     public class SqlException : Exception
     {
 

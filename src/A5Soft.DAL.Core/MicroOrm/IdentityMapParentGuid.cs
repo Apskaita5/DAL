@@ -73,7 +73,7 @@ namespace A5Soft.DAL.Core.MicroOrm
 
         internal override void UpdatePrimaryKey(T instance)
         {
-            throw new NotSupportedException();
+            // do nothing, guid id is not entered by a user 
         }
 
         internal override void DeletePrimaryKey(T instance)

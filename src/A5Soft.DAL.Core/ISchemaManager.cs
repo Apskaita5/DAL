@@ -53,6 +53,17 @@ namespace A5Soft.DAL.Core
         Task CreateDatabaseAsync(Schema dbSchema);
 
         /// <summary>
+        /// Initializes a database using DbSchema, i.e.:
+        /// - creates a database if it does not exist;
+        /// - creates tables if it is empty;
+        /// - checks and fixed schema errors otherwise.
+        /// </summary>
+        /// <param name="dbSchema">a DbSchema to use for the database initialization</param>
+        /// <remarks>After creating a new database the <see cref="ISqlAgent.CurrentDatabase">CurrentDatabase</see>
+        /// property should be set to the new database name.</remarks>
+        Task InitDatabaseAsync(Schema dbSchema);
+
+        /// <summary>
         /// Drops (deletes) the current database.
         /// </summary>
         Task DropDatabaseAsync();

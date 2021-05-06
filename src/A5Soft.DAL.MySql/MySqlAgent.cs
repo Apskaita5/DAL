@@ -146,6 +146,41 @@ namespace A5Soft.DAL.MySql
             return (table.Rows.Count < 1);
         }
 
+        /// <inheritdoc cref="ISqlAgent.FetchDatabasesAsync"/>
+        public override async Task<List<string>> FetchDatabasesAsync(string pattern = null,
+            CancellationToken cancellationToken = default)
+        {
+            var query = pattern.IsNullOrWhiteSpace() ? "SHOW DATABASES;" : "SHOW DATABASES LIKE ?CD ;";
+            
+            var conn = await OpenConnectionAsync(true).ConfigureAwait(false);
+
+            try
+            {
+                using (var command = new MySqlCommand())
+                {
+                    command.Connection = conn;
+                    command.CommandTimeout = QueryTimeOut;
+                    command.CommandText = pattern.IsNullOrWhiteSpace() ? "SHOW DATABASES;" : "SHOW DATABASES LIKE ?CD ;";
+                    if (!pattern.IsNullOrWhiteSpace()) command.Parameters.AddWithValue("?CD", pattern.Trim());
+
+                    var reader = await command.ExecuteReaderAsync(cancellationToken)
+                        .ConfigureAwait(false);
+                    var table = await LightDataTable.CreateAsync(reader, cancellationToken)
+                        .ConfigureAwait(false);
+
+                    return table.Rows.Select(r => r.GetString(0)).ToList();
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex.WrapSqlException(query);
+            }
+            finally
+            {
+                await conn.CloseAndDisposeAsync().ConfigureAwait(false);
+            }
+        }
+
         /// <inheritdoc cref="ISqlAgent.GetDefaultSchemaManager"/>
         public override ISchemaManager GetDefaultSchemaManager() => new MySqlSchemaManager(this);
 
@@ -288,6 +323,20 @@ namespace A5Soft.DAL.MySql
         #endregion
 
         #region CRUD Methods
+
+        /// <inheritdoc cref="ISqlAgent.FetchScalarAsync"/>
+        public override async Task<int?> FetchScalarAsync(string token, SqlParam[] parameters = null,
+            CancellationToken cancellationToken = default)
+        {
+            if (token.IsNullOrWhiteSpace()) throw new ArgumentNullException(nameof(token));
+
+            var reader = await ReadAsync(GetSqlQuery(token), parameters, cancellationToken)
+                .ConfigureAwait(false);
+
+            if (!await reader.ReadAsync(cancellationToken)) return null;
+
+            return reader.GetInt32Nullable(0);
+        }
 
         /// <inheritdoc cref="ISqlAgent.FetchTableAsync"/>
         public override async Task<LightDataTable> FetchTableAsync(string token, SqlParam[] parameters,
@@ -503,7 +552,7 @@ namespace A5Soft.DAL.MySql
                     if (mySqlEx.Number == 28000 ||
                         mySqlEx.Number == 42000)
                     {
-                        throw new SqlException(Properties.Resources.SqlExceptionAccessDenied, 
+                        throw new SqlAuthenticationException(Properties.Resources.SqlExceptionAccessDenied, 
                             mySqlEx.Number, string.Empty, mySqlEx);
                     }
                     if (mySqlEx.Number == 2003)

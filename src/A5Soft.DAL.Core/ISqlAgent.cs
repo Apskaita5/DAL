@@ -110,6 +110,14 @@ namespace A5Soft.DAL.Core
         Task<bool> DatabaseEmptyAsync(CancellationToken cancellationToken = default);
 
         /// <summary>
+        /// Fetches a list of databases available.
+        /// </summary>
+        /// <param name="cancellationToken">a cancellation token (if any)</param>
+        /// <param name="pattern">database name pattern to match (if any)</param>
+        /// <returns>a list of databases available</returns>
+        Task<List<string>> FetchDatabasesAsync(string pattern = null, CancellationToken cancellationToken = default);
+
+        /// <summary>
         /// Gets a clean copy (i.e. only connection and configuration data, not connection itself)
         /// of the ISqlAgent instance in order to reuse instance data.
         /// </summary>
@@ -151,10 +159,20 @@ namespace A5Soft.DAL.Core
         /// at the initiation (e.g. if connection is opening too long)</param>
         Task<TResult> FetchInTransactionAsync<TResult>(Func<Task<TResult>> method, 
             CancellationToken cancellationToken = default);
-         
+
         #endregion
 
         #region CRUD Methods
+
+        /// <summary>
+        /// Fetches a single int value using SQL query token in the SQL repository.
+        /// </summary>
+        /// <param name="token">a token of the SQL query in the SQL repository</param>
+        /// <param name="parameters">a collection of the SQL query parameters (if any)</param>
+        /// <param name="cancellationToken">a cancellation token (if any)</param>
+        /// <returns>first value returned by the SQL query (or null)</returns>
+        Task<int?> FetchScalarAsync(string token, SqlParam[] parameters = null,
+            CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Fetches data using SQL query token in the SQL repository.

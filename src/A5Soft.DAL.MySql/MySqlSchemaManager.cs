@@ -613,10 +613,8 @@ namespace A5Soft.DAL.MySql
             if (Agent.CurrentDatabase.IsNullOrWhiteSpace()) throw new InvalidOperationException(
                 "CurrentDatabase property (name of the new database) is not set.");
 
-            var applicableEngine = _engine;
-            if (applicableEngine.IsNullOrWhiteSpace()) applicableEngine = DefaultEngine;
-            var applicableCharset = _charset;
-            if (applicableCharset.IsNullOrWhiteSpace()) applicableCharset = DefaultCharset;
+            var applicableEngine = _engine.IsNullOrWhiteSpace() ? DefaultEngine : _engine;
+            var applicableCharset = _charset.IsNullOrWhiteSpace() ? DefaultCharset : _charset;
 
             var createScript = new List<string>
                 {
@@ -666,6 +664,54 @@ namespace A5Soft.DAL.MySql
                         }
                     }
                 }
+            }
+        }
+
+        /// <inheritdoc />
+        public override async Task InitDatabaseAsync(Schema schema)
+        {
+            if (schema.IsNull()) throw new ArgumentNullException(nameof(schema));
+            if (Agent.IsTransactionInProgress)
+                throw new InvalidOperationException(Properties.Resources.CreateDatabaseExceptionTransactionInProgress);
+            if (Agent.CurrentDatabase.IsNullOrWhiteSpace()) throw new InvalidOperationException(
+                "CurrentDatabase property (name of the new database) is not set.");
+            if (schema.Tables.Count < 1) throw new ArgumentException(
+                "Database gauge schema empty.", nameof(schema));
+
+            if (!(await this.Agent.DatabaseExistsAsync()))
+            {
+                await CreateDatabaseAsync(schema);
+                return;
+            }
+
+            if (await this.Agent.DatabaseEmptyAsync())
+            {
+                var applicableEngine = _engine.IsNullOrWhiteSpace() ? DefaultEngine : _engine;
+                var applicableCharset = _charset.IsNullOrWhiteSpace() ? DefaultCharset : _charset;
+
+                var createScript = new List<string>();
+                foreach (var table in schema.GetTablesInCreateOrder())
+                {
+                    createScript.AddRange(table.GetCreateTableStatements(Agent.CurrentDatabase,
+                        applicableEngine, applicableCharset, MyAgent));
+                }
+
+                await Agent.ExecuteCommandBatchAsync(createScript.ToArray());
+
+                return;
+            }
+
+            var dbErrors = await this.GetDbSchemaErrorsAsync(schema);
+            if (dbErrors.Any())
+            {
+                var upgradeScript = new List<string>();
+                foreach (var schemaError in dbErrors)
+                {
+                    if (schemaError.IsRepairable) 
+                        upgradeScript.AddRange(schemaError.SqlStatementsToRepair);
+                }
+
+                if (upgradeScript.Any()) await Agent.ExecuteCommandBatchAsync(upgradeScript.ToArray());
             }
         }
 

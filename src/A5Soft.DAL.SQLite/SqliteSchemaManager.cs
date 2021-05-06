@@ -427,6 +427,48 @@ namespace A5Soft.DAL.SQLite
             return Agent.ExecuteCommandBatchAsync(script.ToArray());
         }
 
+        /// <inheritdoc />
+        public override async Task InitDatabaseAsync(Schema schema)
+        {
+            if (schema.IsNull()) throw new ArgumentNullException(nameof(schema));
+            if (Agent.IsTransactionInProgress)
+                throw new InvalidOperationException(Properties.Resources.CreateDatabaseExceptionTransactionInProgress);
+            if (schema.Tables.Count < 1) throw new ArgumentException(
+                Properties.Resources.DatabaseCreateExceptionNoTables, nameof(schema));
+
+            if (!(await this.Agent.DatabaseExistsAsync()))
+            {
+                await CreateDatabaseAsync(schema);
+                return;
+            }
+
+            if (await this.Agent.DatabaseEmptyAsync())
+            {
+                var createScript = new List<string>();
+                foreach (var table in schema.GetTablesInCreateOrder())
+                {
+                    createScript.AddRange(table.GetCreateTableStatements(MyAgent));
+                }
+
+                await Agent.ExecuteCommandBatchAsync(createScript.ToArray());
+
+                return;
+            }
+
+            var dbErrors = await this.GetDbSchemaErrorsAsync(schema);
+            if (dbErrors.Any())
+            {
+                var upgradeScript = new List<string>();
+                foreach (var schemaError in dbErrors)
+                {
+                    if (schemaError.IsRepairable)
+                        upgradeScript.AddRange(schemaError.SqlStatementsToRepair);
+                }
+
+                if (upgradeScript.Any()) await Agent.ExecuteCommandBatchAsync(upgradeScript.ToArray());
+            }
+        }
+
         /// <summary>
         /// Drops (deletes) the database specified.
         /// </summary>

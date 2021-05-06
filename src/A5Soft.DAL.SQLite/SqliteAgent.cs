@@ -113,6 +113,13 @@ namespace A5Soft.DAL.SQLite
             }
         }
 
+        /// <inheritdoc cref="ISqlAgent.FetchDatabasesAsync"/>
+        public override Task<List<string>> FetchDatabasesAsync(string pattern = null, 
+            CancellationToken cancellationToken = default)
+        {
+            throw new NotSupportedException();
+        }
+
         /// <inheritdoc cref="ISqlAgent.GetDefaultSchemaManager"/>
         public override ISchemaManager GetDefaultSchemaManager() => new SqliteSchemaManager(this);
 
@@ -254,6 +261,20 @@ namespace A5Soft.DAL.SQLite
         #endregion
 
         #region CRUD Methods
+
+        /// <inheritdoc cref="ISqlAgent.FetchScalarAsync"/>
+        public override async Task<int?> FetchScalarAsync(string token, SqlParam[] parameters = null,
+            CancellationToken cancellationToken = default)
+        {
+            if (token.IsNullOrWhiteSpace()) throw new ArgumentNullException(nameof(token));
+
+            var reader = await ReadAsync(GetSqlQuery(token), parameters, cancellationToken)
+                .ConfigureAwait(false);
+
+            if (!await reader.ReadAsync(cancellationToken)) return null;
+
+            return reader.GetInt32Nullable(0);
+        }
 
         /// <inheritdoc cref="ISqlAgent.FetchTableAsync"/>
         public override async Task<LightDataTable> FetchTableAsync(string token, SqlParam[] parameters,
@@ -472,8 +493,8 @@ namespace A5Soft.DAL.SQLite
                         sqliteEx.ErrorCode == (int)SQLiteErrorCode.CantOpen ||
                         sqliteEx.ErrorCode == (int)SQLiteErrorCode.Corrupt)
                     {
-                        throw new SqlException(Properties.Resources.SqlExceptionPasswordInvalid, sqliteEx.ErrorCode,
-                            string.Empty, sqliteEx);
+                        throw new SqlAuthenticationException(Properties.Resources.SqlExceptionPasswordInvalid, 
+                            sqliteEx.ErrorCode, string.Empty, sqliteEx);
                     }
                     if (sqliteEx.ErrorCode == (int)SQLiteErrorCode.NotFound)
                     {

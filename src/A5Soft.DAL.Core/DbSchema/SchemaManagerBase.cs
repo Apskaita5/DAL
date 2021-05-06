@@ -140,6 +140,9 @@ namespace A5Soft.DAL.Core.DbSchema
         /// <inheritdoc cref="ISchemaManager.CreateDatabaseAsync"/>
         public abstract Task CreateDatabaseAsync(Schema schema);
 
+        /// <inheritdoc cref="ISchemaManager.InitDatabaseAsync"/>
+        public abstract Task InitDatabaseAsync(Schema schema);
+
         /// <inheritdoc cref="ISchemaManager.DropDatabaseAsync"/>
         public abstract Task DropDatabaseAsync();
 

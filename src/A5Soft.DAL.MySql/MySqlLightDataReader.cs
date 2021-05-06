@@ -20,7 +20,7 @@ namespace A5Soft.DAL.MySql
 
         protected override async Task CloseConnectionAsync()
         {
-            try { await _command.DisposeAsync(); }
+            try { _command.Dispose(); }
             catch (Exception) { }
             await _connection.CloseAndDisposeAsync();
         }

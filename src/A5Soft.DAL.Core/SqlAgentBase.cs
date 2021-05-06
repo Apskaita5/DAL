@@ -122,6 +122,10 @@ namespace A5Soft.DAL.Core
         /// <inheritdoc cref="ISqlAgent.DatabaseEmptyAsync"/>
         public abstract Task<bool> DatabaseEmptyAsync(CancellationToken cancellationToken = default);
 
+        /// <inheritdoc cref="ISqlAgent.FetchDatabasesAsync"/>
+        public abstract Task<List<string>> FetchDatabasesAsync(string pattern = null, 
+            CancellationToken cancellationToken = default);
+
         /// <inheritdoc cref="ISqlAgent.GetDefaultSchemaManager"/>
         public abstract ISchemaManager GetDefaultSchemaManager();
 
@@ -256,6 +260,10 @@ namespace A5Soft.DAL.Core
         #endregion
 
         #region CRUD Methods
+
+        /// <inheritdoc cref="ISqlAgent.FetchScalarAsync"/>
+        public abstract Task<int?> FetchScalarAsync(string token, SqlParam[] parameters = null,
+            CancellationToken cancellationToken = default);
 
         /// <inheritdoc cref="ISqlAgent.FetchTableAsync"/>
         public abstract Task<LightDataTable> FetchTableAsync(string token, SqlParam[] parameters, 
