@@ -41,6 +41,17 @@ namespace A5Soft.DAL.Core
         Task<List<T>> QueryAsync<T>(SqlParam[] parameters, CancellationToken cancellationToken = default) where T : class;
 
         /// <summary>
+        /// Fetches a list of query results of type T for custom query using integrated micro ORM.
+        /// </summary>
+        /// <typeparam name="T">a type of a query result to fetch</typeparam>
+        /// <param name="queryToken">custom query token</param>
+        /// <param name="parameters">query parameters (if any)</param>
+        /// <param name="cancellationToken">a cancellation token (if any)</param>
+        /// <returns></returns>
+        Task<List<T>> CustomQueryAsync<T>(string queryToken, SqlParam[] parameters,
+            CancellationToken cancellationToken = default) where T : class;
+
+        /// <summary>
         /// Fetches a list of all of the business objects of type T using integrated micro ORM.
         /// </summary>
         /// <typeparam name="T">a type of a business objects to fetch</typeparam>

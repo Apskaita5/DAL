@@ -136,6 +136,32 @@ namespace A5Soft.DAL.Core.MicroOrm.Core
             }
         }
 
+        /// <inheritdoc cref="IOrmService.CustomQueryAsync{T}"/>
+        public async Task<List<T>> CustomQueryAsync<T>(string queryToken, SqlParam[] parameters,
+            CancellationToken cancellationToken = default) where T : class
+        {
+            var reader = await Agent.GetReaderAsync(queryToken, parameters, cancellationToken)
+                .ConfigureAwait(false);
+
+            try
+            {
+                var map = GetOrCreateMap<T>();
+
+                var result = new List<T>();
+
+                while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+                {
+                    result.Add(map.LoadInstance(reader));
+                }
+
+                return result;
+            }
+            finally
+            {
+                await reader.CloseAsync();
+            }
+        }
+
         /// <inheritdoc cref="IOrmService.FetchAllEntitiesAsync{T}"/>
         public async Task<List<T>> FetchAllEntitiesAsync<T>(CancellationToken cancellationToken = default) where T : class
         {
