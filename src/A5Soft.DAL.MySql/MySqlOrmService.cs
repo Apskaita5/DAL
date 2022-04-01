@@ -61,7 +61,7 @@ namespace A5Soft.DAL.MySql
                 f => $"{f.DbFieldName.ToConventional(Agent)} AS {f.PropName.Trim()}"));
 
             var table = map.TableName.ToConventional(Agent);
-            var primaryKeyFieldName = map.ParentIdFieldName.ToConventional(Agent);
+            var primaryKeyFieldName = map.PrimaryKeyFieldName.ToConventional(Agent);
             var primaryKeyParamName = Extensions.ParamPrefix + map.PrimaryKeyFieldName;
 
             return $"SELECT {fields} FROM {table} WHERE {primaryKeyFieldName}={primaryKeyParamName};";
