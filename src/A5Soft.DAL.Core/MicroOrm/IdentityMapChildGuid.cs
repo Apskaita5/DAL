@@ -19,6 +19,7 @@ namespace A5Soft.DAL.Core.MicroOrm
             if (parentIdFieldName.IsNullOrWhiteSpace()) throw new ArgumentNullException(nameof(parentIdFieldName));
             PrimaryKeyGetter = primaryKeyGetter ?? throw new ArgumentNullException(nameof(primaryKeyGetter));
             PrimaryKeySetter = primaryKeySetter ?? throw new ArgumentNullException(nameof(primaryKeySetter));
+            PrimaryKeyUpdatable = false;
         }
 
 
@@ -32,7 +33,7 @@ namespace A5Soft.DAL.Core.MicroOrm
         /// </summary>
         public Action<T, Guid?> PrimaryKeySetter { get; }
 
-        public override bool PrimaryKeyUpdatable => false;
+        public override bool PrimaryKeyUpdatable { get; }
 
 
         internal override SqlParam GetPrimaryKeyParamForInsert(T instance)
@@ -77,7 +78,7 @@ namespace A5Soft.DAL.Core.MicroOrm
 
         internal override void UpdatePrimaryKey(T instance)
         {
-            throw new NotSupportedException();
+            // do nothing, guid id is not entered by a user 
         }
 
         internal override void DeletePrimaryKey(T instance)
