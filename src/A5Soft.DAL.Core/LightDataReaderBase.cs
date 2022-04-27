@@ -111,14 +111,19 @@ namespace A5Soft.DAL.Core
         /// <returns></returns>
         public async Task CloseAsync()
         {
-            if (_isTransaction) return;
-            await CloseConnectionAsync();
+            await CloseReaderAsync();
+            if (!_isTransaction) await CloseConnectionAsync();
         }
 
         /// <summary>
         /// Implement actual method to close DB connection.
         /// </summary>
         protected abstract Task CloseConnectionAsync();
+
+        /// <summary>
+        /// Implement actual method to close DB reader (which needs to be done even for a transaction).
+        /// </summary>
+        protected abstract Task CloseReaderAsync();
 
         #region Type Converters
 
@@ -2532,6 +2537,5 @@ namespace A5Soft.DAL.Core
 
             return result;
         }
-
     }
 }

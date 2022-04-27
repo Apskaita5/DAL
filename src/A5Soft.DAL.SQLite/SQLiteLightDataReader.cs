@@ -21,9 +21,15 @@ namespace A5Soft.DAL.SQLite
 
         protected override Task CloseConnectionAsync()
         {
+            _connection.CloseAndDispose();
+            return Task.CompletedTask;
+        }
+
+        protected override Task CloseReaderAsync()
+        {
+            _reader.Close();
             try { _command.Dispose(); }
             catch (Exception) { }
-            _connection.CloseAndDispose();
             return Task.CompletedTask;
         }
     }

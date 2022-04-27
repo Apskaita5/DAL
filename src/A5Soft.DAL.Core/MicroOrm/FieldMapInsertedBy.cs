@@ -42,11 +42,10 @@ namespace A5Soft.DAL.Core.MicroOrm
 
         internal void InitValue(T instance, string userId, FieldMapUpdatedBy<T> updatedByFieldMap)
         {
-            if (updatedByFieldMap.IsNull()) throw new ArgumentNullException(nameof(updatedByFieldMap));
             if (userId.IsNullOrWhiteSpace()) throw new ArgumentNullException(nameof(userId));
 
             ValueSetter(instance, userId);
-            updatedByFieldMap.InitValue(instance, userId);
+            updatedByFieldMap?.InitValue(instance, userId);
         }
 
     }

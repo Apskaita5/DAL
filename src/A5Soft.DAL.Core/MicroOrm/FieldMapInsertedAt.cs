@@ -44,11 +44,9 @@ namespace A5Soft.DAL.Core.MicroOrm
 
         internal void InitValue(T instance, FieldMapUpdatedAt<T> updatedAtFieldMap)
         {
-            if (updatedAtFieldMap.IsNull()) throw new ArgumentNullException(nameof(updatedAtFieldMap));
-
             var value = Extensions.GetCurrentTimeStamp();
             ValueSetter(instance, value);
-            updatedAtFieldMap.InitValue(instance, value);
+            updatedAtFieldMap?.InitValue(instance, value);
         }
 
     }

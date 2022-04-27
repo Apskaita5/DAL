@@ -333,9 +333,24 @@ namespace A5Soft.DAL.MySql
             var reader = await ReadAsync(GetSqlQuery(token), parameters, cancellationToken)
                 .ConfigureAwait(false);
 
-            if (!await reader.ReadAsync(cancellationToken)) return null;
+            int? result;
+            try
+            {
+                if (await reader.ReadAsync(cancellationToken))
+                {
+                    result = reader.GetInt32Nullable(0);
+                }
+                else
+                {
+                    result = null;
+                }
+            }
+            finally
+            {
+                await reader.CloseAsync();
+            }
 
-            return reader.GetInt32Nullable(0);
+            return result;
         }
 
         /// <inheritdoc cref="ISqlAgent.FetchTableAsync"/>
@@ -614,6 +629,8 @@ namespace A5Soft.DAL.MySql
                 connection = await OpenConnectionAsync(withoutDatabase).ConfigureAwait(false);
             }
 
+            MySqlDataReader reader = null;
+
             try
             {
                 using (var command = new MySqlCommand())
@@ -627,7 +644,7 @@ namespace A5Soft.DAL.MySql
 
                     if (typeof(T) == typeof(LightDataTable))
                     {
-                        var reader = await command.ExecuteReaderAsync(cancellationToken)
+                        reader = await command.ExecuteReaderAsync(cancellationToken)
                             .ConfigureAwait(false);
                         return (T) (object) (await LightDataTable.CreateAsync(reader, cancellationToken)
                             .ConfigureAwait(false));
@@ -652,6 +669,7 @@ namespace A5Soft.DAL.MySql
             }
             finally
             {
+                if (null != reader) reader.Close();
                 if (!usingTransaction) await connection.CloseAndDisposeAsync().ConfigureAwait(false);
             }
         }
@@ -673,26 +691,30 @@ namespace A5Soft.DAL.MySql
                 connection = await OpenConnectionAsync(withoutDatabase).ConfigureAwait(false);
             }
 
+            var command = new MySqlCommand
+            {
+                Connection = connection,
+                CommandTimeout = QueryTimeOut,
+                CommandText = ReplaceParams(sqlStatement, parameters)
+            };
+            if (usingTransaction) command.Transaction = transaction;
+
+            MySqlDataReader reader = null;
+
+            AddParams(command, parameters);
+
             try
             {
-                var command = new MySqlCommand
-                {
-                    Connection = connection,
-                    CommandTimeout = QueryTimeOut,
-                    CommandText = ReplaceParams(sqlStatement, parameters)
-                };
-                if (usingTransaction) command.Transaction = transaction;
-
-                AddParams(command, parameters);
-
-                var reader = await command.ExecuteReaderAsync(cancellationToken)
+                reader = await command.ExecuteReaderAsync(cancellationToken)
                     .ConfigureAwait(false);
 
                 return new MySqlLightDataReader(reader, connection, command, usingTransaction);
             }
             catch (Exception ex)
             {
+                if (null != reader) reader.Close();
                 if (!usingTransaction) await connection.CloseAndDisposeAsync().ConfigureAwait(false);
+
                 throw ex.WrapSqlException(sqlStatement, parameters);
             }
         }

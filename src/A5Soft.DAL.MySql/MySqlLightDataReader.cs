@@ -18,12 +18,18 @@ namespace A5Soft.DAL.MySql
             _command = command ?? throw new ArgumentNullException(nameof(command));
         }
 
-        protected override async Task CloseConnectionAsync()
+        protected override Task CloseConnectionAsync()
         {
-            try { _command.Dispose(); }
-            catch (Exception) { }
-            await _connection.CloseAndDisposeAsync();
+            return _connection.CloseAndDisposeAsync();
         }
 
+        protected override Task CloseReaderAsync()
+        {
+            _reader.Close();
+            ((MySqlDataReader)_reader).Dispose();
+            try { _command.Dispose(); }
+            catch (Exception){}
+            return Task.CompletedTask;
+        }
     }
 }
