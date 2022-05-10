@@ -1,5 +1,4 @@
 ﻿using A5Soft.DAL.Core;
-using A5Soft.DAL.Core.DbSchema;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -9,6 +8,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using A5Soft.DAL.Core.MicroOrm;
+using System.Data.Common;
 
 namespace A5Soft.DAL.SQLite
 {
@@ -54,7 +54,7 @@ namespace A5Soft.DAL.SQLite
         /// <summary>
         /// Gets a value indicationg whether an SQL transation is in progress.
         /// </summary>
-        public override bool IsTransactionInProgress => (CurrentTransaction != null);
+        public override bool IsTransactionInProgress => CurrentTransaction != null;
 
         #endregion
 
@@ -109,12 +109,12 @@ namespace A5Soft.DAL.SQLite
                     "SELECT name, sql FROM sqlite_master WHERE type='table' AND NOT name LIKE 'sqlite_%';",
                     null, CancellationToken.None).ConfigureAwait(false);
                 conn.Close();
-                return (table.Rows.Count < 1);
+                return table.Rows.Count < 1;
             }
         }
 
         /// <inheritdoc cref="ISqlAgent.FetchDatabasesAsync"/>
-        public override Task<List<string>> FetchDatabasesAsync(string pattern = null, 
+        public override Task<List<string>> FetchDatabasesAsync(string pattern = null,
             CancellationToken cancellationToken = default)
         {
             throw new NotSupportedException();
@@ -155,7 +155,7 @@ namespace A5Soft.DAL.SQLite
 
         /// <summary>
         /// Starts a new transaction.
-        /// </summary> 
+        /// </summary>
         /// <param name="cancellationToken">a cancelation token (if any); does nothing for SQLite implementation</param>
         /// <exception cref="InvalidOperationException">if transaction is already in progress</exception>
         protected override async Task<object> TransactionBeginAsync(CancellationToken cancellationToken)
@@ -171,13 +171,12 @@ namespace A5Soft.DAL.SQLite
                 // no point in setting AsyncLocal as it will be lost on exit
                 // should use method RegisterTransactionForAsyncContext in the transaction method
                 if (UseTransactionPerInstance) instanceTransaction = transaction;
-                
+
                 return transaction;
             }
             catch (Exception)
             {
                 connection.CloseAndDispose();
-
                 throw;
             }
         }
@@ -195,7 +194,7 @@ namespace A5Soft.DAL.SQLite
 
             var typedTransaction = transaction as SQLiteTransaction;
             asyncTransaction.Value = typedTransaction ?? throw new ArgumentException(
-                string.Format(Properties.Resources.InvalidTransactionTypeException, 
+                string.Format(Properties.Resources.InvalidTransactionTypeException,
                     transaction.GetType().FullName), nameof(transaction));
         }
 
@@ -245,7 +244,7 @@ namespace A5Soft.DAL.SQLite
 
             CleanUpTransaction();
 
-            return Task.FromResult<Exception>(null);
+            return Task.FromResult<Exception>(ex);
         }
 
         private void CleanUpTransaction()
@@ -271,9 +270,24 @@ namespace A5Soft.DAL.SQLite
             var reader = await ReadAsync(GetSqlQuery(token), parameters, cancellationToken)
                 .ConfigureAwait(false);
 
-            if (!await reader.ReadAsync(cancellationToken)) return null;
+            int? result;
+            try
+            {
+                if (await reader.ReadAsync(cancellationToken))
+                {
+                    result = reader.GetInt32Nullable(0);
+                }
+                else
+                {
+                    result = null;
+                }
+            }
+            finally
+            {
+                await reader.CloseAsync();
+            }
 
-            return reader.GetInt32Nullable(0);
+            return result;
         }
 
         /// <inheritdoc cref="ISqlAgent.FetchTableAsync"/>
@@ -298,44 +312,42 @@ namespace A5Soft.DAL.SQLite
 
         /// <inheritdoc cref="ISqlAgent.FetchTablesAsync"/>
         public override async Task<LightDataTable[]> FetchTablesAsync((string Token, SqlParam[] Parameters)[] queries,
-            CancellationToken cancellationToken = default)
+            CancellationToken ct = default)
         {
             if (null == queries || queries.Length < 1) throw new ArgumentNullException(nameof(queries));
-            if (queries.Any(q => q.Token.IsNullOrWhiteSpace())) 
+            if (queries.Any(q => q.Token.IsNullOrWhiteSpace()))
                 throw new ArgumentException(Properties.Resources.QueryTokenEmptyException, nameof(queries));
 
-            var tasks = new List<Task<LightDataTable>>();
+            var result = new List<LightDataTable>();
 
             if (this.IsTransactionInProgress)
             {
                 foreach (var (Token, Parameters) in queries)
                 {
-                    tasks.Add(ExecuteAsync<LightDataTable>(GetSqlQuery(Token), Parameters, cancellationToken));
+                    result.Add(await ExecuteAsync<LightDataTable>(GetSqlQuery(Token), Parameters, ct)
+                        .ConfigureAwait(false));
                 }
-                return await Task.WhenAll(tasks).ConfigureAwait(false);
             }
             else
             {
                 using (var conn = await OpenConnectionAsync().ConfigureAwait(false))
                 {
-
-                    LightDataTable[] result;
-
                     try
                     {
-                        foreach (var (Token, Parameters) in queries) 
-                            tasks.Add(FetchUsingConnectionAsync(conn, GetSqlQuery(Token),
-                            cancellationToken, Parameters));
-                        result = (await Task.WhenAll(tasks).ConfigureAwait(false));
+                        foreach (var (Token, Parameters) in queries)
+                        {
+                            result.Add(await FetchUsingConnectionAsync(conn, GetSqlQuery(Token),
+                                ct, Parameters).ConfigureAwait(false));
+                        }
                     }
                     finally
                     {
                         conn.CloseAndDispose();
                     }
-
-                    return result;
                 }
             }
+
+            return result.ToArray();
         }
 
         /// <inheritdoc cref="ISqlAgent.FetchTableRawAsync"/>
@@ -367,10 +379,10 @@ namespace A5Soft.DAL.SQLite
             if (fields.Any(field => field.IsNullOrWhiteSpace()))
                 throw new ArgumentException(Properties.Resources.FieldsEmptyException, nameof(fields));
 
-            var fieldsQuery = string.Join(", ", fields.Select(field => 
+            var fieldsQuery = string.Join(", ", fields.Select(field =>
                 field.ToConventional(this)).ToArray());
 
-            return await FetchTableRawAsync($"SELECT {fieldsQuery} FROM {table.ToConventional(this)};", 
+            return await FetchTableRawAsync($"SELECT {fieldsQuery} FROM {table.ToConventional(this)};",
                 null, cancellationToken).ConfigureAwait(false);
         }
 
@@ -379,8 +391,7 @@ namespace A5Soft.DAL.SQLite
         {
             if (insertStatementToken.IsNullOrWhiteSpace()) throw new ArgumentNullException(nameof(insertStatementToken));
 
-            return await ExecuteAsync<long>(GetSqlQuery(insertStatementToken), parameters,
-                CancellationToken.None).ConfigureAwait(false);
+            return await ExecuteAsync<long>(GetSqlQuery(insertStatementToken), parameters).ConfigureAwait(false);
         }
 
         /// <inheritdoc cref="ISqlAgent.ExecuteInsertRawAsync"/>
@@ -388,7 +399,7 @@ namespace A5Soft.DAL.SQLite
         {
             if (insertStatement.IsNullOrWhiteSpace()) throw new ArgumentNullException(nameof(insertStatement));
 
-            return await ExecuteAsync<long>(insertStatement, parameters, CancellationToken.None)
+            return await ExecuteAsync<long>(insertStatement, parameters)
                 .ConfigureAwait(false);
         }
 
@@ -397,8 +408,7 @@ namespace A5Soft.DAL.SQLite
         {
             if (statementToken.IsNullOrWhiteSpace()) throw new ArgumentNullException(nameof(statementToken));
 
-            return await ExecuteAsync<int>(GetSqlQuery(statementToken), parameters,
-                CancellationToken.None).ConfigureAwait(false);
+            return await ExecuteAsync<int>(GetSqlQuery(statementToken), parameters).ConfigureAwait(false);
         }
 
         /// <inheritdoc cref="ISqlAgent.ExecuteCommandRawAsync"/>
@@ -406,7 +416,7 @@ namespace A5Soft.DAL.SQLite
         {
             if (statement.IsNullOrWhiteSpace()) throw new ArgumentNullException(nameof(statement));
 
-            return await ExecuteAsync<int>(statement, parameters, CancellationToken.None)
+            return await ExecuteAsync<int>(statement, parameters)
                 .ConfigureAwait(false);
         }
 
@@ -435,7 +445,7 @@ namespace A5Soft.DAL.SQLite
                         {
                             command.CommandText = statement;
                             currentStatement = statement;
-                            await command.ExecuteNonQueryAsync().ConfigureAwait(false);
+                            _ = await command.ExecuteNonQueryAsync().ConfigureAwait(false);
                         }
 
                     }
@@ -449,11 +459,10 @@ namespace A5Soft.DAL.SQLite
                     conn.CloseAndDispose();
                 }
             }
-
         }
 
         #endregion
-           
+
         internal async Task<SQLiteConnection> OpenConnectionAsync(bool enableForeignKeys = true)
         {
             SQLiteConnection result;
@@ -493,7 +502,7 @@ namespace A5Soft.DAL.SQLite
                         sqliteEx.ErrorCode == (int)SQLiteErrorCode.CantOpen ||
                         sqliteEx.ErrorCode == (int)SQLiteErrorCode.Corrupt)
                     {
-                        throw new SqlAuthenticationException(Properties.Resources.SqlExceptionPasswordInvalid, 
+                        throw new SqlAuthenticationException(Properties.Resources.SqlExceptionPasswordInvalid,
                             sqliteEx.ErrorCode, string.Empty, sqliteEx);
                     }
                     if (sqliteEx.ErrorCode == (int)SQLiteErrorCode.NotFound)
@@ -518,7 +527,7 @@ namespace A5Soft.DAL.SQLite
 
             if (null == parameters || parameters.Length < 1) return;
 
-            foreach (var p in parameters.Where(p => !p.ReplaceInQuery)) 
+            foreach (var p in parameters.Where(p => !p.ReplaceInQuery))
                 command.Parameters.AddWithValue(Extensions.ParamPrefix + p.Name.Trim(), p.GetValue(this));
         }
 
@@ -549,13 +558,13 @@ namespace A5Soft.DAL.SQLite
 
             return parameters.Where(parameter => parameter.ReplaceInQuery).
                 Aggregate(sqlQuery, (current, parameter) =>
-                    current.Replace("?" + parameter.Name.Trim(), 
+                    current.Replace("?" + parameter.Name.Trim(),
                         Extensions.ParamPrefix + parameter.Name.Trim()));
         }
-                               
-        
+
+
         private async Task<T> ExecuteAsync<T>(string sqlStatement, SqlParam[] parameters,
-            CancellationToken cancellationToken, bool ignoreTransaction = false)
+            CancellationToken ct = default, bool ignoreTransaction = false)
         {
             var transaction = CurrentTransaction;
 
@@ -571,6 +580,8 @@ namespace A5Soft.DAL.SQLite
                 connection = await OpenConnectionAsync().ConfigureAwait(false);
             }
 
+            DbDataReader reader = null;
+
             try
             {
                 using (var command = new SQLiteCommand())
@@ -579,7 +590,7 @@ namespace A5Soft.DAL.SQLite
                     if (usingTransaction) command.Transaction = transaction;
 
                     command.CommandTimeout = QueryTimeOut;
-                    
+
                     var commandText = ReplaceParams(sqlStatement, parameters).Trim();
                     if (typeof(T) == typeof(long))
                     {
@@ -598,9 +609,9 @@ namespace A5Soft.DAL.SQLite
 
                     if (typeof(T) == typeof(LightDataTable))
                     {
-                        var reader = await command.ExecuteReaderAsync(cancellationToken)
+                        reader = await command.ExecuteReaderAsync(ct)
                             .ConfigureAwait(false);
-                        return (T)(object)(await LightDataTable.CreateAsync(reader, cancellationToken)
+                        return (T)(object)(await LightDataTable.CreateAsync(reader, ct)
                             .ConfigureAwait(false));
                     }
                     else if (typeof(T) == typeof(long))
@@ -622,6 +633,7 @@ namespace A5Soft.DAL.SQLite
             }
             finally
             {
+                reader?.Close();
                 if (!usingTransaction) connection.CloseAndDispose();
             }
         }
@@ -673,32 +685,34 @@ namespace A5Soft.DAL.SQLite
             if (null == connection) throw new ArgumentNullException(nameof(connection));
             if (sqlStatement.IsNullOrWhiteSpace()) throw new ArgumentNullException(nameof(sqlStatement));
 
+            DbDataReader reader = null;
             try
             {
                 using (var command = new SQLiteCommand())
                 {
-
                     command.Connection = connection;
                     command.CommandTimeout = QueryTimeOut;
                     command.CommandText = ReplaceParams(sqlStatement, parameters);
                     AddParams(command, parameters);
 
-                    using (var reader = await command.ExecuteReaderAsync(cancellationToken)
-                        .ConfigureAwait(false))
-                    {
-                        return await LightDataTable.CreateAsync(reader, cancellationToken)
+                    reader = await command.ExecuteReaderAsync(cancellationToken)
+                        .ConfigureAwait(false);
+
+                    return await LightDataTable.CreateAsync(reader, cancellationToken)
                             .ConfigureAwait(false);
-                    }
                 }
             }
             catch (Exception ex)
             {
                 throw ex.WrapSqlException(sqlStatement, parameters);
             }
+            finally
+            {
+                reader?.Close();
+            }
         }
-                               
-        
-        protected override void DisposeManagedState() { }
 
+
+        protected override void DisposeManagedState() { }
     }
 }

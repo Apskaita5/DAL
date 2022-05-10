@@ -12,7 +12,6 @@ namespace A5Soft.DAL.SQLite
     /// </summary>
     public class SqliteOrmService : OrmServiceBase
     {
-
         public override string SqlImplementationId => Extensions.SqliteImplementationId;
 
 
@@ -20,7 +19,7 @@ namespace A5Soft.DAL.SQLite
         /// Creates a new instance of SQLite micro ORM service.
         /// </summary>
         /// <param name="agent">an SQLite agent to use for ORM services</param>
-        public SqliteOrmService(SqliteAgent agent, Dictionary<Type, Type> customPocoMaps) 
+        public SqliteOrmService(SqliteAgent agent, Dictionary<Type, Type> customPocoMaps)
             : base(agent, customPocoMaps) { }
 
 
@@ -58,7 +57,7 @@ namespace A5Soft.DAL.SQLite
             if (map.IsNull()) throw new ArgumentNullException(nameof(map));
 
             var fields = string.Join(", ", map.GetFieldsForSelect()
-                .Select(f => 
+                .Select(f =>
                     $"{f.DbFieldName.ToConventional(Agent)} AS {f.PropName}"));
 
             var tableName = map.TableName.ToConventional(Agent);
@@ -73,7 +72,7 @@ namespace A5Soft.DAL.SQLite
             if (map.IsNull()) throw new ArgumentNullException(nameof(map));
 
             var fields = string.Join(", ", map.GetFieldsForSelect()
-                .Select(f => 
+                .Select(f =>
                     $"{f.DbFieldName.ToConventional(Agent)} AS {f.PropName}"));
 
             return $"SELECT {fields} FROM {map.TableName.ToConventional(Agent)};";
@@ -118,6 +117,5 @@ namespace A5Soft.DAL.SQLite
 
             return $"DELETE FROM {tableName} WHERE {tableName}.{primaryKeyFieldName}={primaryKeyParamName};";
         }
-
     }
 }

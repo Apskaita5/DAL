@@ -10,10 +10,9 @@ namespace A5Soft.DAL.Core.MicroOrm.Core
     /// <typeparam name="C">a type of the underlying field value</typeparam>
     public abstract class ManagedOrmFieldMapBase<T, C> : OrmFieldMapBase<T> where T : class
     {
-
         protected ManagedOrmFieldMapBase(string dbFieldName, string propName,
             FieldPersistenceType persistenceType, Action<T, C> valueSetter,
-            Func<T, C> valueGetter, int? updateScope) 
+            Func<T, C> valueGetter, int? updateScope)
             : base(dbFieldName, propName, persistenceType, updateScope)
         {
             if (persistenceType.HasFlag(FieldPersistenceType.Insert | FieldPersistenceType.Update)
@@ -41,6 +40,5 @@ namespace A5Soft.DAL.Core.MicroOrm.Core
         {
             return SqlParam.Create(DbFieldName, ValueGetter(instance));
         }
-
     }
 }

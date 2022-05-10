@@ -12,7 +12,7 @@ namespace A5Soft.DAL.Core
     /// </summary>
     /// <remarks>On ASP .NET core should be used:
     /// - as a singleton if only one database is used;
-    /// - inside a scoped wrapper that would have IHttpContextAccessor dependency in constructor and 
+    /// - inside a scoped wrapper that would have IHttpContextAccessor dependency in constructor and
     /// initialize the encapsulated SQL agent using request info.
     /// On standalone application should use (static?) dictionary per database </remarks>
     public abstract class SqlAgentBase : ISqlAgent, IDisposable
@@ -123,7 +123,7 @@ namespace A5Soft.DAL.Core
         public abstract Task<bool> DatabaseEmptyAsync(CancellationToken cancellationToken = default);
 
         /// <inheritdoc cref="ISqlAgent.FetchDatabasesAsync"/>
-        public abstract Task<List<string>> FetchDatabasesAsync(string pattern = null, 
+        public abstract Task<List<string>> FetchDatabasesAsync(string pattern = null,
             CancellationToken cancellationToken = default);
 
         /// <inheritdoc cref="ISqlAgent.GetDefaultSchemaManager"/>
@@ -133,12 +133,12 @@ namespace A5Soft.DAL.Core
         public abstract IOrmService GetDefaultOrmService(Dictionary<Type, Type> customPocoMaps);
 
         /// <summary>
-        /// Gets a clean copy (i.e. only connection data, not connection itself) of the SqlAgent instance 
+        /// Gets a clean copy (i.e. only connection data, not connection itself) of the SqlAgent instance
         /// in order to reuse instance data.
         /// </summary>
         public abstract SqlAgentBase GetCopy();
 
-        /// <inheritdoc cref="ISqlAgent.GetCopy"/>    
+        /// <inheritdoc cref="ISqlAgent.GetCopy"/>
         ISqlAgent ISqlAgent.GetCopy()
         {
             return GetCopy();
@@ -266,7 +266,7 @@ namespace A5Soft.DAL.Core
             CancellationToken cancellationToken = default);
 
         /// <inheritdoc cref="ISqlAgent.FetchTableAsync"/>
-        public abstract Task<LightDataTable> FetchTableAsync(string token, SqlParam[] parameters, 
+        public abstract Task<LightDataTable> FetchTableAsync(string token, SqlParam[] parameters,
             CancellationToken cancellationToken = default);
 
         /// <inheritdoc cref="ISqlAgent.GetReaderAsync"/>
@@ -306,7 +306,6 @@ namespace A5Soft.DAL.Core
 
         #endregion
 
-        
         /// <summary>
         /// Gets an SQL query identified by the token for the specific SQL implementation sqlAgent.
         /// </summary>
@@ -316,7 +315,7 @@ namespace A5Soft.DAL.Core
         /// <exception cref="InvalidOperationException">SQL repository path is not initialized.</exception>
         /// <exception cref="InvalidOperationException">Global cache provider ir not initialized.</exception>
         /// <exception cref="ArgumentException">SQL agent does not implement repository file prefix.</exception>
-        /// <exception cref="FileNotFoundException">No repository files found or they contain no data 
+        /// <exception cref="FileNotFoundException">No repository files found or they contain no data
         /// for the SQL agent type specified.</exception>
         /// <exception cref="Exception">Failed to load file due to missing query tokens.</exception>
         /// <exception cref="Exception">Failed to load file due to duplicate query token.</exception>
@@ -324,11 +323,11 @@ namespace A5Soft.DAL.Core
         /// <exception cref="InvalidOperationException">SQL query token is unknown.</exception>
         protected string GetSqlQuery(string token)
         {
-            if (_sqlDictionary.IsNull()) 
+            if (_sqlDictionary.IsNull())
                 throw new InvalidOperationException(Properties.Resources.SqlDictionaryNotConfiguredException);
             return _sqlDictionary.GetSqlQuery(token, this);
         }
-         
+
         #region IDisposable Support
 
         private bool disposedValue = false; // To detect redundant calls
@@ -362,6 +361,5 @@ namespace A5Soft.DAL.Core
         protected abstract void DisposeManagedState();
 
         #endregion
-
     }
 }

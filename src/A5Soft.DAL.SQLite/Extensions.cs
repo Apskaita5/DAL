@@ -46,7 +46,7 @@ namespace A5Soft.DAL.SQLite
         /// <param name="type2">the second type to compare</param>
         internal static bool IsEquivalentTo(this DbDataType type1, DbDataType type2)
         {
-            return (ToBaseType(type1) == ToBaseType(type2));
+            return ToBaseType(type1) == ToBaseType(type2);
         }
 
         internal static DbDataType ToBaseType(this DbDataType fieldType)
@@ -163,7 +163,7 @@ namespace A5Soft.DAL.SQLite
                 || field2.IndexType == IndexType.Primary))
                 return true;
 
-            return (field1.IndexType == field2.IndexType);
+            return field1.IndexType == field2.IndexType;
         }
 
         /// <summary>
@@ -237,9 +237,9 @@ namespace A5Soft.DAL.SQLite
             if (definition.IsNullOrWhiteSpace()) throw new ArgumentNullException(nameof(definition));
 
             var nativeName = definition.Trim();
-            if (nativeName.Contains("(")) nativeName = 
+            if (nativeName.Contains("(")) nativeName =
                 nativeName.Substring(0, nativeName.IndexOf("(", StringComparison.Ordinal));
-            if (nativeName.Contains(" ")) nativeName = 
+            if (nativeName.Contains(" ")) nativeName =
                 nativeName.Substring(0, nativeName.IndexOf(" ", StringComparison.Ordinal));
             nativeName = nativeName.Trim().ToUpper();
 
@@ -479,7 +479,7 @@ namespace A5Soft.DAL.SQLite
 
             return new List<string>() { $"DROP INDEX {schema.IndexName.ToConventional(agent)};" };
         }
-           
+
         /// <summary>
         /// Gets a list of statements required to add a new database table using the schema specified.
         /// </summary>
@@ -489,7 +489,7 @@ namespace A5Soft.DAL.SQLite
             if (schema.IsNull()) throw new ArgumentNullException(nameof(schema));
             if (agent.IsNull()) throw new ArgumentNullException(nameof(agent));
 
-            var lines = string.Join(", ", schema.Fields.Select(field => 
+            var lines = string.Join(", ", schema.Fields.Select(field =>
                 field.GetFieldDefinition(false, agent)));
 
             var result = new List<string>()
@@ -526,7 +526,7 @@ namespace A5Soft.DAL.SQLite
         /// <param name="value">a string value to evaluate</param>
         internal static bool IsNullOrWhiteSpace(this string value)
         {
-            return (null == value || string.IsNullOrEmpty(value.Trim()));
+            return null == value || string.IsNullOrEmpty(value.Trim());
         }
 
         /// <summary>
@@ -576,14 +576,14 @@ namespace A5Soft.DAL.SQLite
             var actualRollbackEx = rollbackException.WrapSqlException();
 
             if (actualEx is SqlException sqlEx) return sqlEx.GetRollbackException(actualRollbackEx);
-            
+
             return SqlException.GetRollbackException(actualEx, actualRollbackEx);
         }
 
         internal static Exception WrapSqliteException(this SQLiteException target, string statementDescription)
         {
             return new SqlException(string.Format(Properties.Resources.SqlExceptionMessage,
-                target.ErrorCode, target.HResult, target.Message, statementDescription), 
+                target.ErrorCode, target.HResult, target.Message, statementDescription),
                 target.ErrorCode, statementDescription, target);
         }
 
@@ -600,6 +600,5 @@ namespace A5Soft.DAL.SQLite
             try { connection.Dispose(); }
             catch (Exception) { }
         }
-
     }
 }

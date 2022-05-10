@@ -17,11 +17,10 @@ namespace A5Soft.DAL.Core.MicroOrm
     /// <typeparam name="TChild">type of child class</typeparam>
     public sealed class ChildMap<TParent, TChild> : IChildMap<TParent> where TParent : class where TChild : class
     {
-
         /// <summary>
         /// Creates a new instance of child field map.
         /// </summary>
-        /// <param name="propName">a name of the the property that the child is managed by</param>
+        /// <param name="propName">a name of the property that the child is managed by</param>
         /// <param name="allowNull">whether the child could be null</param>
         /// <param name="valueGetter">a method to get a value of the mapped field for a class instance</param>
         /// <param name="valueSetter">a method to set a value of the mapped field for a class instance</param>
@@ -53,7 +52,7 @@ namespace A5Soft.DAL.Core.MicroOrm
         #region Properties
 
         /// <summary>
-        /// a name of the the property that the child value is managed by
+        /// a name of the property that the child value is managed by
         /// </summary>
         public string PropName { get; }
 
@@ -89,7 +88,7 @@ namespace A5Soft.DAL.Core.MicroOrm
         private Action<TParent, TChild> ValueSetter { get; }
 
         /// <summary>
-        /// a method to get a value indicating whether a child instance is a new entity (i.e. insert vs. update) 
+        /// a method to get a value indicating whether a child instance is a new entity (i.e. insert vs. update)
         /// </summary>
         private Func<TChild, bool> IsNewGetter { get; }
 
@@ -101,16 +100,16 @@ namespace A5Soft.DAL.Core.MicroOrm
             if (service.IsNull()) throw new ArgumentNullException(nameof(service));
             if (instance.IsNull()) throw new ArgumentNullException(nameof(instance));
             if (parentId.IsNull()) throw new ArgumentNullException(nameof(parentId));
-            
+
             if (!PersistenceType.HasFlag(FieldPersistenceType.Read)) return;
-            
+
             var child = await service.FetchChildEntitiesAsync<TChild>(parentId, ct);
 
             if (child.Count > 0)
             {
                 if (child.Count > 1) throw new InvalidOperationException(
                     $"Fetched multiple ({child.Count}) children of type {typeof(TChild).FullName} for parent of type {typeof(TParent).FullName} using parent id - {parentId}.");
-                
+
                 ValueSetter(instance, child[0]);
             }
             else
@@ -123,7 +122,7 @@ namespace A5Soft.DAL.Core.MicroOrm
         }
 
         /// <inheritdoc cref="IChildMap{TParent}.SaveChildAsync"/>
-        public async Task SaveChildAsync(TParent instance, object parentId, string userId, int? scope, 
+        public async Task SaveChildAsync(TParent instance, object parentId, string userId, int? scope,
             bool scopeIsFlag, IOrmService service)
         {
             if (service.IsNull()) throw new ArgumentNullException(nameof(service));
@@ -133,12 +132,11 @@ namespace A5Soft.DAL.Core.MicroOrm
             var childInstance = ValueGetter(instance);
             var isNew = IsNewGetter(childInstance);
 
-            if (isNew && PersistenceType.HasFlag(FieldPersistenceType.Insert)) 
+            if (isNew && PersistenceType.HasFlag(FieldPersistenceType.Insert))
                 await service.ExecuteInsertChildAsync(childInstance, parentId, userId);
-            else if (!isNew && PersistenceType.HasFlag(FieldPersistenceType.Update) 
-                && UpdateScope.IsInUpdateScope(scope, scopeIsFlag)) 
+            else if (!isNew && PersistenceType.HasFlag(FieldPersistenceType.Update)
+                && UpdateScope.IsInUpdateScope(scope, scopeIsFlag))
                 await service.ExecuteUpdateAsync(childInstance, userId, scope);
         }
-
     }
 }

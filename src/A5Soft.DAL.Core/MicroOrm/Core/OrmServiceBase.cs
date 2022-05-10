@@ -77,14 +77,14 @@ namespace A5Soft.DAL.Core.MicroOrm.Core
         }
 
         /// <inheritdoc cref="IOrmService.FetchChildEntitiesAsync{T}"/>
-        public async Task<List<T>> FetchChildEntitiesAsync<T>(object parentId, 
+        public async Task<List<T>> FetchChildEntitiesAsync<T>(object parentId,
             CancellationToken cancellationToken = default) where T : class
         {
             var map = GetOrCreateMap<T>();
 
             var reader = await GetReaderByParentAsync<T>(parentId, cancellationToken)
                 .ConfigureAwait(false);
-                                                   
+
             var result = new List<T>();
 
             try
@@ -247,7 +247,7 @@ namespace A5Soft.DAL.Core.MicroOrm.Core
         }
 
         /// <inheritdoc cref="IOrmService.GetQueryReaderAsync{T}"/>
-        public async Task<ILightDataReader> GetQueryReaderAsync<T>(SqlParam[] parameters, 
+        public async Task<ILightDataReader> GetQueryReaderAsync<T>(SqlParam[] parameters,
             CancellationToken cancellationToken = default) where T : class
         {
             var map = GetOrCreateMap<T>();
@@ -260,7 +260,7 @@ namespace A5Soft.DAL.Core.MicroOrm.Core
         }
 
         /// <inheritdoc cref="IOrmService.FetchTableByParentAsync{T}"/>
-        public Task<LightDataTable> FetchTableByParentAsync<T>(object parentId, 
+        public Task<LightDataTable> FetchTableByParentAsync<T>(object parentId,
             CancellationToken cancellationToken = default) where T : class
         {
             var map = GetOrCreateMap<T>();
@@ -300,10 +300,10 @@ namespace A5Soft.DAL.Core.MicroOrm.Core
 
             SqlParam[] parameters = null;
             if (!parentId.IsNull()) parameters = new SqlParam[] { SqlParam.Create(map.ParentIdFieldName, parentId) };
-              
+
             if (!map.FetchByParentIdQueryToken.IsNullOrWhiteSpace())
             {
-                return await Agent.GetReaderAsync(map.FetchByParentIdQueryToken, parameters, 
+                return await Agent.GetReaderAsync(map.FetchByParentIdQueryToken, parameters,
                     cancellationToken).ConfigureAwait(false);
             }
 
@@ -329,7 +329,7 @@ namespace A5Soft.DAL.Core.MicroOrm.Core
             if (!map.FetchAllQueryToken.IsNullOrWhiteSpace())
                 return Agent.FetchTableAsync(map.FetchAllQueryToken, null, cancellationToken);
 
-            return Agent.FetchTableRawAsync(map.GetOrAddSelectAllQuery(GetSelectAllQuery), 
+            return Agent.FetchTableRawAsync(map.GetOrAddSelectAllQuery(GetSelectAllQuery),
                 null, cancellationToken);
         }
 
@@ -337,7 +337,7 @@ namespace A5Soft.DAL.Core.MicroOrm.Core
         public async Task<ILightDataReader> GetReaderForAllAsync<T>(CancellationToken cancellationToken = default) where T : class
         {
             var map = GetOrCreateMap<T>();
-            
+
             if (map.FetchAllQueryToken.IsNullOrWhiteSpace())
             {
                 return await Agent.GetReaderRawAsync(map.GetOrAddSelectAllQuery(GetSelectAllQuery),
@@ -345,13 +345,13 @@ namespace A5Soft.DAL.Core.MicroOrm.Core
             }
             else
             {
-                return await Agent.GetReaderAsync(map.FetchAllQueryToken, null, 
+                return await Agent.GetReaderAsync(map.FetchAllQueryToken, null,
                     cancellationToken).ConfigureAwait(false);
             }
         }
 
         /// <inheritdoc cref="IOrmService.LoadObjectFieldsAsync{T}"/>
-        public async Task LoadObjectFieldsAsync<T>(T instance, object id, 
+        public async Task LoadObjectFieldsAsync<T>(T instance, object id,
             CancellationToken cancellationToken = default) where T : class
         {
             if (instance.IsNull()) throw new ArgumentNullException(nameof(instance));
@@ -429,7 +429,7 @@ namespace A5Soft.DAL.Core.MicroOrm.Core
         #region Initialization Methods
 
         /// <inheritdoc cref="IOrmService.InitEntityAsync{T}"/>
-        public async Task<T> InitEntityAsync<T>(SqlParam[] parameters, 
+        public async Task<T> InitEntityAsync<T>(SqlParam[] parameters,
             CancellationToken cancellationToken = default) where T : class
         {
             var map = GetOrCreateMap<T>();
@@ -454,7 +454,7 @@ namespace A5Soft.DAL.Core.MicroOrm.Core
         }
 
         /// <inheritdoc cref="IOrmService.FetchInitTableAsync{T}"/>
-        public Task<LightDataTable> FetchInitTableAsync<T>(SqlParam[] parameters, 
+        public Task<LightDataTable> FetchInitTableAsync<T>(SqlParam[] parameters,
             CancellationToken cancellationToken = default) where T : class
         {
             var map = GetOrCreateMap<T>();
@@ -478,7 +478,7 @@ namespace A5Soft.DAL.Core.MicroOrm.Core
         }
 
         /// <inheritdoc cref="IOrmService.InitObjectFieldsAsync{T}"/>
-        public async Task InitObjectFieldsAsync<T>(T instance, SqlParam[] parameters, 
+        public async Task InitObjectFieldsAsync<T>(T instance, SqlParam[] parameters,
             CancellationToken cancellationToken = default) where T : class
         {
             var map = GetOrCreateMap<T>();
@@ -526,7 +526,7 @@ namespace A5Soft.DAL.Core.MicroOrm.Core
         #region Insert Methods
 
         /// <inheritdoc cref="IOrmService.ExecuteInsertAsync{T}"/>
-        public async Task ExecuteInsertAsync<T>(T instance, string userId = null, 
+        public async Task ExecuteInsertAsync<T>(T instance, string userId = null,
             SqlParam[] extraParameters = null) where T : class
         {
             if (instance.IsNull()) throw new ArgumentNullException(nameof(instance));
@@ -538,10 +538,10 @@ namespace A5Soft.DAL.Core.MicroOrm.Core
             if (map.PrimaryKeyAutoIncrement)
             {
                 var newPrimaryKey = await Agent.ExecuteInsertRawAsync(
-                    map.GetOrAddInsertStatement(GetInsertStatement, extraParameters), 
+                    map.GetOrAddInsertStatement(GetInsertStatement, extraParameters),
                     map.GetParamsForInsert(instance, extraParameters))
                     .ConfigureAwait(false);
-                
+
                 map.SetPrimaryKeyAutoIncrementValue(instance, newPrimaryKey);
             }
             else
@@ -609,7 +609,7 @@ namespace A5Soft.DAL.Core.MicroOrm.Core
         }
 
         /// <summary>
-        /// Gets an update statement for a business object of type T for a particular update scope. 
+        /// Gets an update statement for a business object of type T for a particular update scope.
         /// </summary>
         /// <typeparam name="T">a type of a business object to get an update statement for</typeparam>
         /// <param name="map">a micro ORM map for a business object type</param>
@@ -662,9 +662,8 @@ namespace A5Soft.DAL.Core.MicroOrm.Core
 
         protected OrmEntityMap<T> GetOrCreateMap<T>() where T : class
         {
-            return (OrmEntityMap<T>)_maps.GetOrAdd(typeof(T), 
-                type => new OrmEntityMap<T>(_customPocoMaps?.GetValueOrDefault(typeof(T))));
+            return (OrmEntityMap<T>)_maps.GetOrAdd(typeof(T),
+                _ => new OrmEntityMap<T>(_customPocoMaps?.GetValueOrDefault(typeof(T))));
         }
-
     }
 }

@@ -31,7 +31,7 @@ namespace A5Soft.DAL.MySql
             if ((type1 == DbDataType.Double || type1 == DbDataType.Float)
                 && (type2 == DbDataType.Double || type2 == DbDataType.Float))
                 return true;
-            return (type1 == type2);
+            return type1 == type2;
         }
 
         /// <summary>
@@ -95,7 +95,7 @@ namespace A5Soft.DAL.MySql
         {
             if (field1.IsNull()) throw new ArgumentNullException(nameof(field1));
             if (field2.IsNull()) throw new ArgumentNullException(nameof(field2));
-                              
+
             if (!field1.Name.EqualsByConvention(field2.Name))
                 throw new ArgumentException(Properties.Resources.InvalidFieldComparisonException);
 
@@ -173,7 +173,6 @@ namespace A5Soft.DAL.MySql
                         string.Format(Properties.Resources.EnumValueNotImplementedException,
                         schema.DataType.ToString()));
             }
-
         }
 
         /// <summary>
@@ -213,11 +212,11 @@ namespace A5Soft.DAL.MySql
             }
             if (schema.DataType == DbDataType.Decimal)
             {
-                result = $"{result}({(schema.Length + 15)}, {schema.Length})";
+                result = $"{result}({schema.Length + 15}, {schema.Length})";
             }
             if (schema.DataType == DbDataType.Enum)
             {
-                var enumValues = schema.EnumValues.Split(new string[] { "," }, 
+                var enumValues = schema.EnumValues.Split(new string[] { "," },
                         StringSplitOptions.RemoveEmptyEntries)
                     .Select(v => $"'{v.ToConventional(agent)}'");
                 result = $"{result}({string.Join(", ", enumValues)})";
@@ -301,7 +300,7 @@ namespace A5Soft.DAL.MySql
         }
 
         /// <summary>
-        /// Gets a list of statements required to alter the database table field schema 
+        /// Gets a list of statements required to alter the database table field schema
         /// to match the specified gauge schema.(does not fixes indexes)
         /// </summary>
         /// <param name="schema">the gauge field schema to apply</param>
@@ -407,7 +406,7 @@ namespace A5Soft.DAL.MySql
             tblName = tblName.ToConventional(agent);
             var indexName = schema.IndexName.ToConventional(agent);
             var fieldName = schema.Name.ToConventional(agent);
-            
+
             string result;
 
             if (schema.IndexType.IsForeignKey())
@@ -521,7 +520,7 @@ namespace A5Soft.DAL.MySql
         /// <param name="value">a string value to evaluate</param>
         internal static bool IsNullOrWhiteSpace(this string value)
         {
-            return (null == value || string.IsNullOrEmpty(value.Trim()));
+            return null == value || string.IsNullOrEmpty(value.Trim());
         }
 
         /// <summary>
@@ -543,7 +542,7 @@ namespace A5Soft.DAL.MySql
 
             if (actualEx is SqlException sqlEx) return sqlEx;
 
-            if (actualEx is MySqlException mySqlEx) 
+            if (actualEx is MySqlException mySqlEx)
                 return mySqlEx.WrapMySqlException(string.Empty);
 
             return target;
@@ -570,14 +569,14 @@ namespace A5Soft.DAL.MySql
             var actualRollbackEx = rollbackException.WrapSqlException();
 
             if (actualEx is SqlException sqlEx) return sqlEx.GetRollbackException(actualRollbackEx);
-            
+
             return SqlException.GetRollbackException(actualEx, actualRollbackEx);
         }
 
         private static Exception WrapMySqlException(this MySqlException target, string statementDescription)
         {
             return new SqlException(string.Format(Properties.Resources.SqlExceptionMessageWithStatement,
-                target.ErrorCode.ToString(), target.ErrorCode, target.HResult, target.Number, 
+                target.ErrorCode.ToString(), target.ErrorCode, target.HResult, target.Number,
                 target.SqlState, target.Message, Environment.NewLine, statementDescription),
                 (int)target.ErrorCode, statementDescription, target);
         }
@@ -599,6 +598,5 @@ namespace A5Soft.DAL.MySql
                 catch (Exception) { }
             }
         }
-
     }
 }

@@ -1,0 +1,4 @@
+﻿[*.cs]
+
+# RCS1098: Constant values should be placed on right side of comparisons.
+dotnet_diagnostic.RCS1098.severity = none

@@ -14,11 +14,10 @@ namespace A5Soft.DAL.MySql
     /// <summary>
     /// Represents an abstraction over the native MySql data access and schema methods.
     /// </summary>
-    /// <remarks>Should be stored in ApplicationContext.Local context (in thread for client, 
+    /// <remarks>Should be stored in ApplicationContext.Local context (in thread for client,
     /// in http context on server).</remarks>
     public class MySqlAgent : SqlAgentBase
     {
-
         #region Constants
 
         private const string AgentName = "MySql connector";
@@ -31,7 +30,7 @@ namespace A5Soft.DAL.MySql
         #region Properties
 
         /// <inheritdoc cref="ISqlAgent.IsTransactionInProgress"/>
-        public override bool IsTransactionInProgress => (CurrentTransaction != null);
+        public override bool IsTransactionInProgress => CurrentTransaction != null;
 
         /// <summary>
         /// Gets a name of the SQL implementation behind the SqlAgent, i. e. MySql connector.
@@ -102,7 +101,9 @@ namespace A5Soft.DAL.MySql
 
             var conn = await OpenConnectionAsync(true).ConfigureAwait(false);
 
-            bool result; 
+            bool result;
+
+            MySqlDataReader reader = null;
 
             try
             {
@@ -112,7 +113,7 @@ namespace A5Soft.DAL.MySql
                     command.CommandTimeout = QueryTimeOut;
                     command.CommandText = $"SHOW DATABASES LIKE '{CurrentDatabase.Trim()}';";
 
-                    var reader = await command.ExecuteReaderAsync(cancellationToken)
+                    reader = await command.ExecuteReaderAsync(cancellationToken)
                         .ConfigureAwait(false);
                     var table = await LightDataTable.CreateAsync(reader, cancellationToken)
                         .ConfigureAwait(false);
@@ -126,6 +127,7 @@ namespace A5Soft.DAL.MySql
             }
             finally
             {
+                reader?.Close();
                 await conn.CloseAndDisposeAsync().ConfigureAwait(false);
             }
 
@@ -143,7 +145,7 @@ namespace A5Soft.DAL.MySql
                     null, cancellationToken, ignoreTransaction: true)
                 .ConfigureAwait(false);
 
-            return (table.Rows.Count < 1);
+            return table.Rows.Count < 1;
         }
 
         /// <inheritdoc cref="ISqlAgent.FetchDatabasesAsync"/>
@@ -151,8 +153,11 @@ namespace A5Soft.DAL.MySql
             CancellationToken cancellationToken = default)
         {
             var query = pattern.IsNullOrWhiteSpace() ? "SHOW DATABASES;" : "SHOW DATABASES LIKE ?CD ;";
-            
+
             var conn = await OpenConnectionAsync(true).ConfigureAwait(false);
+
+            MySqlDataReader reader = null;
+            List<string> result = null;
 
             try
             {
@@ -160,15 +165,16 @@ namespace A5Soft.DAL.MySql
                 {
                     command.Connection = conn;
                     command.CommandTimeout = QueryTimeOut;
-                    command.CommandText = pattern.IsNullOrWhiteSpace() ? "SHOW DATABASES;" : "SHOW DATABASES LIKE ?CD ;";
-                    if (!pattern.IsNullOrWhiteSpace()) command.Parameters.AddWithValue("?CD", pattern.Trim());
+                    command.CommandText = query;
+                    if (!pattern.IsNullOrWhiteSpace())
+                        command.Parameters.AddWithValue("?CD", pattern.Trim());
 
-                    var reader = await command.ExecuteReaderAsync(cancellationToken)
+                    reader = await command.ExecuteReaderAsync(cancellationToken)
                         .ConfigureAwait(false);
                     var table = await LightDataTable.CreateAsync(reader, cancellationToken)
                         .ConfigureAwait(false);
 
-                    return table.Rows.Select(r => r.GetString(0)).ToList();
+                    result = table.Rows.Select(r => r.GetString(0)).ToList();
                 }
             }
             catch (Exception ex)
@@ -177,8 +183,11 @@ namespace A5Soft.DAL.MySql
             }
             finally
             {
+                reader?.Close();
                 await conn.CloseAndDisposeAsync().ConfigureAwait(false);
             }
+
+            return result;
         }
 
         /// <inheritdoc cref="ISqlAgent.GetDefaultSchemaManager"/>
@@ -230,11 +239,11 @@ namespace A5Soft.DAL.MySql
             {
                 var transaction = await connection.BeginTransactionAsync(cancellationToken)
                     .ConfigureAwait(false);
-                
+
                 // no point in setting AsyncLocal as it will be lost on exit
                 // should use method RegisterTransactionForAsyncContext in the transaction method
                 if (UseTransactionPerInstance) instanceTransaction = transaction;
-                
+
                 return transaction;
             }
             catch (Exception)
@@ -256,8 +265,8 @@ namespace A5Soft.DAL.MySql
             if (transaction.IsNull()) throw new ArgumentNullException(nameof(transaction));
 
             var typedTransaction = transaction as MySqlTransaction;
-            asyncTransaction.Value = typedTransaction ?? 
-                throw new ArgumentException(string.Format(Properties.Resources.InvalidTransactionType, 
+            asyncTransaction.Value = typedTransaction ?? throw new ArgumentException(
+                string.Format(Properties.Resources.InvalidTransactionType,
                     transaction.GetType().FullName), nameof(transaction));
         }
 
@@ -307,7 +316,7 @@ namespace A5Soft.DAL.MySql
 
             await CleanUpTransactionAsync().ConfigureAwait(false);
 
-            return null;
+            return ex;
         }
 
         private async Task CleanUpTransactionAsync()
@@ -374,49 +383,48 @@ namespace A5Soft.DAL.MySql
         }
 
         /// <inheritdoc cref="ISqlAgent.FetchTablesAsync"/>
-        public override async Task<LightDataTable[]> FetchTablesAsync((string Token, 
-                SqlParam[] Parameters)[] queries, CancellationToken cancellationToken = default)
+        public override async Task<LightDataTable[]> FetchTablesAsync((string Token,
+                SqlParam[] Parameters)[] queries, CancellationToken ct = default)
         {
             if (null == queries || queries.Length < 1) throw new ArgumentNullException(nameof(queries));
-            if (queries.Any(q => q.Token.IsNullOrWhiteSpace())) 
+            if (queries.Any(q => q.Token.IsNullOrWhiteSpace()))
                 throw new ArgumentException(Properties.Resources.QueryTokenEmptyException, nameof(queries));
 
             var tasks = new List<Task<LightDataTable>>();
+            var result = new List<LightDataTable>();
 
             if (this.IsTransactionInProgress)
             {
                 foreach (var (Token, Parameters) in queries)
                 {
-                    tasks.Add(ExecuteAsync<LightDataTable>(GetSqlQuery(Token), Parameters, cancellationToken));
+                    result.Add(await ExecuteAsync<LightDataTable>(GetSqlQuery(Token), Parameters, ct)
+                        .ConfigureAwait(false));
                 }
-                return await Task.WhenAll(tasks).ConfigureAwait(false);
             }
             else
             {
                 using (var conn = await OpenConnectionAsync().ConfigureAwait(false))
                 {
-                    LightDataTable[] result;
-
                     try
                     {
-                        foreach (var (Token, Parameters) in queries) 
-                            tasks.Add(FetchUsingConnectionAsync(conn, GetSqlQuery(Token),
-                                cancellationToken, Parameters));
-
-                        result = (await Task.WhenAll(tasks).ConfigureAwait(false));
+                        foreach (var (Token, Parameters) in queries)
+                        {
+                            result.Add(await FetchUsingConnectionAsync(conn, GetSqlQuery(Token),
+                                ct, Parameters).ConfigureAwait(false));
+                        }
                     }
                     finally
                     {
                         await conn.CloseAndDisposeAsync().ConfigureAwait(false);
                     }
-
-                    return result;
                 }
             }
+
+            return result.ToArray();
         }
 
         /// <inheritdoc cref="ISqlAgent.FetchTableRawAsync"/>
-        public override async Task<LightDataTable> FetchTableRawAsync(string sqlQuery, 
+        public override async Task<LightDataTable> FetchTableRawAsync(string sqlQuery,
             SqlParam[] parameters, CancellationToken cancellationToken = default)
         {
             if (sqlQuery.IsNullOrWhiteSpace()) throw new ArgumentNullException(nameof(sqlQuery));
@@ -426,7 +434,7 @@ namespace A5Soft.DAL.MySql
         }
 
         /// <inheritdoc cref="ISqlAgent.GetReaderRawAsync"/>
-        public override async Task<ILightDataReader> GetReaderRawAsync(string sqlQuery, 
+        public override async Task<ILightDataReader> GetReaderRawAsync(string sqlQuery,
             SqlParam[] parameters, CancellationToken cancellationToken = default)
         {
             if (sqlQuery.IsNullOrWhiteSpace()) throw new ArgumentNullException(nameof(sqlQuery));
@@ -436,7 +444,7 @@ namespace A5Soft.DAL.MySql
         }
 
         /// <inheritdoc cref="ISqlAgent.FetchTableFieldsAsync"/>
-        public override Task<LightDataTable> FetchTableFieldsAsync(string table, 
+        public override Task<LightDataTable> FetchTableFieldsAsync(string table,
             string[] fields, CancellationToken cancellationToken = default)
         {
             if (table.IsNullOrWhiteSpace()) throw new ArgumentNullException(nameof(table));
@@ -462,8 +470,7 @@ namespace A5Soft.DAL.MySql
             if (insertStatementToken.IsNullOrWhiteSpace())
                 throw new ArgumentNullException(nameof(insertStatementToken));
 
-            return await ExecuteAsync<long>(GetSqlQuery(insertStatementToken), parameters, 
-                    CancellationToken.None)
+            return await ExecuteAsync<long>(GetSqlQuery(insertStatementToken), parameters)
                 .ConfigureAwait(false);
         }
 
@@ -472,8 +479,7 @@ namespace A5Soft.DAL.MySql
         {
             if (insertStatement.IsNullOrWhiteSpace()) throw new ArgumentNullException(nameof(insertStatement));
 
-            return await ExecuteAsync<long>(insertStatement, parameters, CancellationToken.None)
-                .ConfigureAwait(false);
+            return await ExecuteAsync<long>(insertStatement, parameters).ConfigureAwait(false);
         }
 
         /// <inheritdoc cref="ISqlAgent.ExecuteCommandAsync"/>
@@ -481,8 +487,7 @@ namespace A5Soft.DAL.MySql
         {
             if (statementToken.IsNullOrWhiteSpace()) throw new ArgumentNullException(nameof(statementToken));
 
-            return await ExecuteAsync<int>(GetSqlQuery(statementToken), parameters, CancellationToken.None)
-                .ConfigureAwait(false);
+            return await ExecuteAsync<int>(GetSqlQuery(statementToken), parameters).ConfigureAwait(false);
         }
 
         /// <inheritdoc cref="ISqlAgent.ExecuteCommandRawAsync"/>
@@ -490,8 +495,7 @@ namespace A5Soft.DAL.MySql
         {
             if (statement.IsNullOrWhiteSpace()) throw new ArgumentNullException(nameof(statement));
 
-            return await ExecuteAsync<int>(statement, parameters, CancellationToken.None)
-                .ConfigureAwait(false);
+            return await ExecuteAsync<int>(statement, parameters).ConfigureAwait(false);
         }
 
         /// <inheritdoc cref="ISqlAgent.ExecuteCommandBatchAsync"/>
@@ -533,7 +537,7 @@ namespace A5Soft.DAL.MySql
         }
 
         #endregion
-            
+
 
         internal async Task<MySqlConnection> OpenConnectionAsync(bool withoutDatabase = false)
         {
@@ -567,7 +571,7 @@ namespace A5Soft.DAL.MySql
                     if (mySqlEx.Number == 28000 ||
                         mySqlEx.Number == 42000)
                     {
-                        throw new SqlAuthenticationException(Properties.Resources.SqlExceptionAccessDenied, 
+                        throw new SqlAuthenticationException(Properties.Resources.SqlExceptionAccessDenied,
                             mySqlEx.Number, string.Empty, mySqlEx);
                     }
                     if (mySqlEx.Number == 2003)
@@ -578,7 +582,6 @@ namespace A5Soft.DAL.MySql
 
                     throw mySqlEx.WrapSqlException();
                 }
-
                 throw;
             }
 
@@ -592,9 +595,11 @@ namespace A5Soft.DAL.MySql
 
             if (null == parameters || parameters.Length < 1) return;
 
-            foreach (var p in parameters.Where(p => !p.ReplaceInQuery)) 
-                command.Parameters.AddWithValue(Extensions.ParamPrefix + p.Name.Trim(), 
+            foreach (var p in parameters.Where(p => !p.ReplaceInQuery))
+            {
+                _ = command.Parameters.AddWithValue(Extensions.ParamPrefix + p.Name.Trim(),
                     p.GetValue(this));
+            }
         }
 
         private string ReplaceParams(string sqlQuery, SqlParam[] parameters)
@@ -611,9 +616,9 @@ namespace A5Soft.DAL.MySql
 
             return result;
         }
-                         
-        private async Task<T> ExecuteAsync<T>(string sqlStatement, SqlParam[] parameters, 
-            CancellationToken cancellationToken, bool ignoreTransaction = false, bool withoutDatabase = false)
+
+        private async Task<T> ExecuteAsync<T>(string sqlStatement, SqlParam[] parameters,
+            CancellationToken ct = default, bool ignoreTransaction = false, bool withoutDatabase = false)
         {
             var transaction = CurrentTransaction;
 
@@ -644,9 +649,9 @@ namespace A5Soft.DAL.MySql
 
                     if (typeof(T) == typeof(LightDataTable))
                     {
-                        reader = await command.ExecuteReaderAsync(cancellationToken)
+                        reader = await command.ExecuteReaderAsync(ct)
                             .ConfigureAwait(false);
-                        return (T) (object) (await LightDataTable.CreateAsync(reader, cancellationToken)
+                        return (T) (object) (await LightDataTable.CreateAsync(reader, ct)
                             .ConfigureAwait(false));
                     }
                     else if (typeof(T) == typeof(long))
@@ -669,7 +674,7 @@ namespace A5Soft.DAL.MySql
             }
             finally
             {
-                if (null != reader) reader.Close();
+                reader?.Close();
                 if (!usingTransaction) await connection.CloseAndDisposeAsync().ConfigureAwait(false);
             }
         }
@@ -712,7 +717,7 @@ namespace A5Soft.DAL.MySql
             }
             catch (Exception ex)
             {
-                if (null != reader) reader.Close();
+                reader?.Close();
                 if (!usingTransaction) await connection.CloseAndDisposeAsync().ConfigureAwait(false);
 
                 throw ex.WrapSqlException(sqlStatement, parameters);
@@ -731,7 +736,7 @@ namespace A5Soft.DAL.MySql
                 {
                     command.Connection = connection;
                     command.CommandTimeout = QueryTimeOut;
-                    command.CommandText = ReplaceParams(sqlStatement, parameters); ;
+                    command.CommandText = ReplaceParams(sqlStatement, parameters);
                     AddParams(command, parameters);
 
                     using (var reader = await command.ExecuteReaderAsync(cancellationToken)
@@ -749,6 +754,5 @@ namespace A5Soft.DAL.MySql
         }
 
         protected override void DisposeManagedState() { }
-
     }
 }

@@ -14,7 +14,7 @@ namespace A5Soft.DAL.Core
         [DebuggerStepThrough]
         internal static bool IsNullOrWhiteSpace(this string value)
         {
-            return (null == value || string.IsNullOrEmpty(value.Trim()));
+            return null == value || string.IsNullOrEmpty(value.Trim());
         }
 
         /// <summary>

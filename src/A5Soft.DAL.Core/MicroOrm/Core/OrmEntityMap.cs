@@ -16,7 +16,7 @@ namespace A5Soft.DAL.Core.MicroOrm.Core
     public sealed class OrmEntityMap<T> where T : class
     {
 
-        private readonly string[] _paramNameCandidates = new string[] 
+        private readonly string[] _paramNameCandidates = new string[]
             { "AA", "AB", "AC", "AD", "CD", "currentKey", "currentId" };
 
         private readonly OrmIdentityMapBase<T> _identity;
@@ -36,7 +36,7 @@ namespace A5Soft.DAL.Core.MicroOrm.Core
         {
             var staticFieldsInfo = GetStaticFields(mapType);
 
-            var identityFieldInfo = staticFieldsInfo.FirstOrDefault(f => 
+            var identityFieldInfo = staticFieldsInfo.FirstOrDefault(f =>
                 typeof(OrmIdentityMapBase<T>).IsAssignableFrom(f.FieldType));
             if (identityFieldInfo.IsNull()) throw new NotSupportedException(string.Format(
                 Properties.Resources.MicroOrmIsNotSupportedByTypeException, typeof(T).FullName));
@@ -59,7 +59,9 @@ namespace A5Soft.DAL.Core.MicroOrm.Core
             _updateStatements = new ConcurrentDictionary<int, string>(Environment.ProcessorCount * 2, 10);
 
             if (_identity.PrimaryKeyAutoIncrement || !_identity.PrimaryKeyUpdatable)
+            {
                 PrimaryKeyUpdateWhereParamName = _identity.PrimaryKeyFieldName;
+            }
             else
             {
                 PrimaryKeyUpdateWhereParamName = null;
@@ -167,10 +169,10 @@ namespace A5Soft.DAL.Core.MicroOrm.Core
         public string GetOrAddSelectByParentIdQuery(Func<OrmEntityMap<T>, string> selectByParentIdQueryFactory)
         {
             if (null == selectByParentIdQueryFactory) throw new ArgumentNullException(nameof(selectByParentIdQueryFactory));
-            
+
             if (_selectByParentIdQuery.IsNullOrWhiteSpace())
                 _selectByParentIdQuery = selectByParentIdQueryFactory(this);
-            
+
             return _selectByParentIdQuery;
         }
 
@@ -181,10 +183,10 @@ namespace A5Soft.DAL.Core.MicroOrm.Core
         public string GetOrAddSelectByNullParentIdQuery(Func<OrmEntityMap<T>, string> selectByNullParentIdQueryFactory)
         {
             if (null == selectByNullParentIdQueryFactory) throw new ArgumentNullException(nameof(selectByNullParentIdQueryFactory));
-            
+
             if (_selectByNullParentIdQuery.IsNullOrWhiteSpace())
                 _selectByNullParentIdQuery = selectByNullParentIdQueryFactory(this);
-            
+
             return _selectByNullParentIdQuery;
         }
 
@@ -195,9 +197,9 @@ namespace A5Soft.DAL.Core.MicroOrm.Core
         public string GetOrAddSelectAllQuery(Func<OrmEntityMap<T>, string> selectAllQueryFactory)
         {
             if (null == selectAllQueryFactory) throw new ArgumentNullException(nameof(selectAllQueryFactory));
-            
+
             if (_selectAllQuery.IsNullOrWhiteSpace()) _selectAllQuery = selectAllQueryFactory(this);
-            
+
             return _selectAllQuery;
         }
 
@@ -211,7 +213,7 @@ namespace A5Soft.DAL.Core.MicroOrm.Core
             if (null == insertStatementFactory) throw new ArgumentNullException(nameof(insertStatementFactory));
 
             if (_insertStatement.IsNullOrWhiteSpace()) _insertStatement = insertStatementFactory(this, extraParameters);
-            
+
             return _insertStatement;
         }
 
@@ -222,9 +224,9 @@ namespace A5Soft.DAL.Core.MicroOrm.Core
         public string GetOrAddDeleteStatement(Func<OrmEntityMap<T>, string> deleteStatementFactory)
         {
             if (null == deleteStatementFactory) throw new ArgumentNullException(nameof(deleteStatementFactory));
-            
+
             if (_deleteStatement.IsNullOrWhiteSpace()) _deleteStatement = deleteStatementFactory(this);
-            
+
             return _deleteStatement;
         }
 
@@ -243,9 +245,8 @@ namespace A5Soft.DAL.Core.MicroOrm.Core
                     _defaultUpdateStatement = updateStatementFactory(this, null);
                 return _defaultUpdateStatement;
             }
-            return _updateStatements.GetOrAdd(scope.Value, s => updateStatementFactory(this, scope));
+            return _updateStatements.GetOrAdd(scope.Value, _ => updateStatementFactory(this, scope));
         }
-                
         #endregion
 
         #region Mapping Methods
@@ -301,9 +302,9 @@ namespace A5Soft.DAL.Core.MicroOrm.Core
         /// <param name="userId">a user description to set in the InsertedBy field</param>
         public void SetAuditFieldsForInsert(T instance, string userId)
         {
-            if (!_insertedBy.IsNull() && userId.IsNullOrWhiteSpace()) 
+            if (!_insertedBy.IsNull() && userId.IsNullOrWhiteSpace())
                 throw new ArgumentNullException(nameof(userId));
-            
+
             _insertedAt?.InitValue(instance, _updatedAt);
             _insertedBy?.InitValue(instance, userId, _updatedBy);
         }
@@ -315,9 +316,9 @@ namespace A5Soft.DAL.Core.MicroOrm.Core
         /// <param name="newPrimaryKey">new primary key value</param>
         internal void SetPrimaryKeyAutoIncrementValue(T instance, long newPrimaryKey)
         {
-            if (_identity.PrimaryKeyAutoIncrement) 
+            if (_identity.PrimaryKeyAutoIncrement)
                 _identity.SetPrimaryKeyAutoIncrementValue(instance, newPrimaryKey);
-            else 
+            else
                 throw new InvalidOperationException($"Primary key for entity of type {typeof(T).FullName} is not autoincremented.");
         }
 
@@ -332,14 +333,14 @@ namespace A5Soft.DAL.Core.MicroOrm.Core
         {
             var result = new List<string>();
 
-            if (_identity.PrimaryKeyIsInUpdateScope(scope)) 
+            if (_identity.PrimaryKeyIsInUpdateScope(scope))
                 result.Add(_identity.PrimaryKeyFieldName);
 
-            result.AddRange(_fields.Where(f => 
-                    f.PersistenceType.HasFlag(FieldPersistenceType.Update) 
+            result.AddRange(_fields.Where(f =>
+                    f.PersistenceType.HasFlag(FieldPersistenceType.Update)
                     && f.UpdateScope.IsInUpdateScope(scope, _identity.ScopeIsFlag))
                 .Select(f => f.DbFieldName));
-            
+
             return result.ToArray();
         }
 
@@ -355,7 +356,7 @@ namespace A5Soft.DAL.Core.MicroOrm.Core
 
             var result = new List<SqlParam>();
 
-            if (_identity.PrimaryKeyIsInUpdateScope(scope)) 
+            if (_identity.PrimaryKeyIsInUpdateScope(scope))
                 result.Add(_identity.GetPrimaryKeyParamForUpdateSet(instance));
 
             result.AddRange(_fields.Where(f => f.PersistenceType.HasFlag(FieldPersistenceType.Update)
@@ -427,11 +428,13 @@ namespace A5Soft.DAL.Core.MicroOrm.Core
         /// a query defined by <see cref="FetchQueryToken"/></param>
         public void LoadValues(T instance, LightDataRow row)
         {
-            if (!_identity.PrimaryKeyPropName.IsNullOrWhiteSpace()) 
+            if (!_identity.PrimaryKeyPropName.IsNullOrWhiteSpace())
                 _identity.LoadPrimaryKeyValue(instance, row);
             foreach (var f in _fields
-                .Where(f => f.PersistenceType.HasFlag(FieldPersistenceType.Read))) 
+                .Where(f => f.PersistenceType.HasFlag(FieldPersistenceType.Read)))
+            {
                 f.SetValue(instance, row);
+            }
         }
 
         /// <summary>
@@ -456,7 +459,9 @@ namespace A5Soft.DAL.Core.MicroOrm.Core
                 _identity.LoadPrimaryKeyValue(instance, reader);
             foreach (var f in _fields
                 .Where(f => f.PersistenceType.HasFlag(FieldPersistenceType.Read)))
+            {
                 f.SetValue(instance, reader);
+            }
         }
 
         /// <summary>
@@ -477,8 +482,10 @@ namespace A5Soft.DAL.Core.MicroOrm.Core
         public void InitValues(T instance, LightDataRow row)
         {
             foreach (var f in _fields
-                .Where(f => f.PersistenceType.HasFlag(FieldPersistenceType.Init))) 
+                .Where(f => f.PersistenceType.HasFlag(FieldPersistenceType.Init)))
+            {
                 f.SetValue(instance, row);
+            }
         }
 
         /// <summary>
@@ -501,7 +508,9 @@ namespace A5Soft.DAL.Core.MicroOrm.Core
         {
             foreach (var f in _fields
                 .Where(f => f.PersistenceType.HasFlag(FieldPersistenceType.Init)))
+            {
                 f.SetValue(instance, reader);
+            }
         }
 
         // CHILD FIELDS
@@ -525,7 +534,7 @@ namespace A5Soft.DAL.Core.MicroOrm.Core
         /// Saves (inserts, updates or deletes) child fields (child entities) data to a database.
         /// </summary>
         /// <param name="instance">a parent instance to save the child fields for</param>
-        /// <param name="userId">a user identifier (e.g. email) for audit field UpdatedBy 
+        /// <param name="userId">a user identifier (e.g. email) for audit field UpdatedBy
         /// (only applicable if the child entity implements standard audit fields)</param>
         /// <param name="scope">a scope of the update operation; a business objects can define
         /// different update scopes (different collections of properties) as an ENUM
@@ -549,15 +558,15 @@ namespace A5Soft.DAL.Core.MicroOrm.Core
 
         /// <summary>
         /// Updates current (original) primary key value after it has been updated or inserted in database,
-        /// i.e. primary key (updated) value -> current primary key value. 
+        /// i.e. primary key (updated) value -> current primary key value.
         /// (only applicable for non autoincrement primary key)
         /// </summary>
         /// <param name="instance"></param>
         public void UpdatePrimaryKey(T instance)
         {
-            if (!_identity.PrimaryKeyAutoIncrement) 
+            if (!_identity.PrimaryKeyAutoIncrement)
                 _identity.UpdatePrimaryKey(instance);
-            else 
+            else
                 throw new InvalidOperationException($"Primary key for entity of type {typeof(T).FullName} is autoincremented (cannot be updated).");
         }
 
@@ -570,7 +579,7 @@ namespace A5Soft.DAL.Core.MicroOrm.Core
 
             while (currentType != null)
             {
-                fields.AddRange(currentType.GetFields(BindingFlags.NonPublic 
+                fields.AddRange(currentType.GetFields(BindingFlags.NonPublic
                     | BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly));
                 currentType = currentType.GetTypeInfo().BaseType;
             }

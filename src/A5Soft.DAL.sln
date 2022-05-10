@@ -7,7 +7,12 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "A5Soft.DAL.Core", "A5Soft.D
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "A5Soft.DAL.MySql", "A5Soft.DAL.MySql\A5Soft.DAL.MySql.csproj", "{58080067-692B-47CF-A203-3B6B40978AB4}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "A5Soft.DAL.SQLite", "A5Soft.DAL.SQLite\A5Soft.DAL.SQLite.csproj", "{59EDB2DC-5E70-48B2-A96C-A3CA0BEC2EC3}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "A5Soft.DAL.SQLite", "A5Soft.DAL.SQLite\A5Soft.DAL.SQLite.csproj", "{59EDB2DC-5E70-48B2-A96C-A3CA0BEC2EC3}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{D15912D9-79F6-47C9-A610-F4525BFFBEDE}"
+	ProjectSection(SolutionItems) = preProject
+		.editorconfig = .editorconfig
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
