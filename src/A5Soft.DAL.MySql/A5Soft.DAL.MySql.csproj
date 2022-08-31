@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <TargetFramework>netstandard2.1</TargetFramework>
     <Authors>Marius Dagys</Authors>
     <Company></Company>
     <Description>MySql implementation of simple ORM for use in my apps in order to avoid external dependencies.</Description>
