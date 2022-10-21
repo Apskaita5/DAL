@@ -139,5 +139,29 @@ namespace A5Soft.DAL.Core
             return new LightDataTable(this.GetLightDataTableProxy());
         }
 
+        /// <summary>
+        /// Converts <see cref="LightDataTable"/> to <see cref="DataTable"/>.
+        /// </summary>
+        /// <returns></returns>
+        public DataTable ToDataTable()
+        {
+            var result = new DataTable();
+            foreach (var col in Columns)
+            {
+                result.Columns.Add(new DataColumn(col.ColumnName, col.DataType)
+                {
+                    Caption = col.Caption
+                });
+            }
+            foreach (var row in Rows)
+            {
+                var newRow = result.Rows.Add();
+                for (int i = 0; i < Columns.Count; i++)
+                {
+                    newRow[i] = row.GetValue(i);
+                }
+            }
+            return result;
+        }
     }
 }
