@@ -289,8 +289,16 @@ namespace A5Soft.DAL.MySql
             if (!IsTransactionInProgress) throw new InvalidOperationException(
                 Properties.Resources.NoTransactionToCommitException);
 
+            // after the commit CurrentTransaction.Connection prop gets set to null
+            // therefore need to capture the connection before the commit
+            var connection = CurrentTransaction.Connection;
+
             await CurrentTransaction.CommitAsync().ConfigureAwait(false);
-            await CleanUpTransactionAsync().ConfigureAwait(false);
+
+            await connection.CloseAndDisposeAsync().ConfigureAwait(false);
+
+            try { CurrentTransaction.Dispose(); }
+            catch (Exception) { }
         }
 
         /// <summary>
@@ -301,7 +309,11 @@ namespace A5Soft.DAL.MySql
         {
             var transaction = CurrentTransaction;
 
-            if (!transaction.Connection.IsNull() && transaction.Connection.State == ConnectionState.Open)
+            // after the rollback CurrentTransaction.Connection prop gets set to null
+            // therefore need to capture the connection before the rollback
+            var connection = transaction?.Connection;
+
+            if (null != connection && connection.State == ConnectionState.Open)
             {
                 try
                 {
@@ -309,24 +321,21 @@ namespace A5Soft.DAL.MySql
                 }
                 catch (Exception e)
                 {
-                    await CleanUpTransactionAsync().ConfigureAwait(false);
+                    await connection.CloseAndDisposeAsync().ConfigureAwait(false);
+
+                    try { transaction.Dispose(); }
+                    catch (Exception) { }
+
                     return ex.WrapSqlException(e);
                 }
             }
 
-            await CleanUpTransactionAsync().ConfigureAwait(false);
+            await connection.CloseAndDisposeAsync().ConfigureAwait(false);
+
+            try { transaction.Dispose(); }
+            catch (Exception) { }
 
             return ex;
-        }
-
-        private async Task CleanUpTransactionAsync()
-        {
-            if (!IsTransactionInProgress) return;
-
-            await CurrentTransaction.Connection.CloseAndDisposeAsync().ConfigureAwait(false);
-
-            try { CurrentTransaction.Dispose(); }
-            catch (Exception) { }
         }
 
         #endregion

@@ -64,7 +64,7 @@ namespace A5Soft.DAL.Core.MicroOrm
 
         internal static bool IsInUpdateScope(this int? fieldScope, int? updateScope, bool scopeIsFlag)
         {
-            return !updateScope.HasValue || !fieldScope.HasValue 
+            return !updateScope.HasValue || !fieldScope.HasValue
                 || (scopeIsFlag && ((updateScope.Value & fieldScope.Value) != 0))
                 || (!scopeIsFlag && updateScope.Value == fieldScope.Value);
         }

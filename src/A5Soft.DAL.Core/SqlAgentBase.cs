@@ -149,7 +149,8 @@ namespace A5Soft.DAL.Core
         #region Transactions        
 
         /// <inheritdoc cref="ISqlAgent.ExecuteInTransactionAsync"/>
-        public async Task ExecuteInTransactionAsync(Func<Task> method, CancellationToken cancellationToken = default)
+        public async Task ExecuteInTransactionAsync(Func<Task> method,
+            CancellationToken cancellationToken = default)
         {
             if (null == method) throw new ArgumentNullException(nameof(method));
 
