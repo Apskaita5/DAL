@@ -495,7 +495,7 @@ namespace A5Soft.DAL.MySql
                 }
             }
 
-            return result;
+            return result.OrderBy(e => (int)e.ErrorType).ToList();
         }
 
         private List<SchemaError> GetDbTableSchemaErrors(TableSchema gaugeSchema, TableSchema actualSchema)

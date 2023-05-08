@@ -271,7 +271,7 @@ namespace A5Soft.DAL.SQLite
                 }
             }
 
-            return result;
+            return result.OrderBy(e => (int)e.ErrorType).ToList();
         }
 
         private List<SchemaError> GetDbTableSchemaErrors(TableSchema gaugeSchema,

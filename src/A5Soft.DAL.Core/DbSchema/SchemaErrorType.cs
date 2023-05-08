@@ -5,12 +5,12 @@
     /// </summary>
     public enum SchemaErrorType
     {
-        FieldMissing = 0,
-        FieldDefinitionObsolete = 1,
-        FieldObsolete = 2,
-        TableMissing = 3,
-        TableObsolete = 4,
-        IndexMissing = 5,
-        IndexObsolete = 6,
+        FieldMissing = 1,
+        FieldDefinitionObsolete = 2,
+        FieldObsolete = 5,
+        TableMissing = 0,
+        TableObsolete = 6,
+        IndexMissing = 3,
+        IndexObsolete = 4,
     }
 }
