@@ -22,8 +22,8 @@ namespace A5Soft.DAL.Core.MicroOrm
         /// with a name specified in the PropName property</param>
         public FieldMapUpdatedBy(string dbFieldName, string propName, Action<T, string> valueSetter, 
             Func<T, string> valueGetter)
-            : base(dbFieldName, propName, FieldPersistenceType.Insert | FieldPersistenceType.Read, 
-                 valueSetter, valueGetter, null) { }
+            : base(dbFieldName, propName, FieldPersistenceType.Insert | FieldPersistenceType.Read
+                  | FieldPersistenceType.Update, valueSetter, valueGetter, null) { }
 
 
         internal override SqlParam GetParam(T instance)

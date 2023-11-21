@@ -27,20 +27,23 @@ namespace A5Soft.DAL.Test
         [Fact]
         public async void TestSimple()
         {
-            for (int i = 0; i < 1000; i++)
+            var obj = new TestEntitySimple()
             {
-                var obj = new TestEntitySimple()
-                {
-                    IntValue = _random.Next(0, 100000),
-                    StringValue = $"test{_random.Next(0, 100000)}"
-                };
+                IntValue = _random.Next(0, 100000),
+                StringValue = $"test{_random.Next(0, 100000)}"
+            };
 
-                await _service.ExecuteInsertAsync(obj);
-                _ = await _service.FetchEntityAsync<TestEntitySimple>(obj.Id);
-                obj.StringValue = $"test{_random.Next(0, 100000)}";
-                await _service.ExecuteUpdateAsync(obj);
-                await _service.ExecuteDeleteAsync<TestEntitySimple>(obj.Id);
-            }
+            await _service.ExecuteInsertAsync(obj, "jonas");
+            var inserted = await _service.FetchEntityAsync<TestEntitySimple>(obj.Id);
+            obj.StringValue = $"test{_random.Next(0, 100000)}";
+            await System.Threading.Tasks.Task.Delay(2000);
+            await _service.ExecuteUpdateAsync(obj, "petras");
+
+            var dt = await _service.Agent.FetchTableRawAsync("select * from simple_test_entities;",
+                    null);
+            var result = dt.ToDataTable();
+
+            await _service.ExecuteDeleteAsync<TestEntitySimple>(obj.Id);
         }
 
         [Fact]

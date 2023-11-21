@@ -158,7 +158,7 @@ namespace A5Soft.DAL.Core
                 var newRow = result.Rows.Add();
                 for (int i = 0; i < Columns.Count; i++)
                 {
-                    newRow[i] = row.GetValue(i);
+                    newRow[i] = row.GetValue(i) ?? DBNull.Value;
                 }
             }
             return result;
