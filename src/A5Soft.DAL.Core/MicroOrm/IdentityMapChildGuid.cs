@@ -8,13 +8,33 @@ namespace A5Soft.DAL.Core.MicroOrm
     public sealed class IdentityMapChildGuid<T> : OrmIdentityMapBase<T> where T : class
     {
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="IdentityMapChildGuid{T}"/> class with specified parameters.
+        /// </summary>
+        /// <param name="tableName">The name of the database table.</param>
+        /// <param name="primaryKeyFieldName">The name of the primary key field.</param>
+        /// <param name="primaryKeyPropName">The name of the primary key property.</param>
+        /// <param name="parentIdFieldName">The name of the parent ID field in the database.</param>
+        /// <param name="factoryMethod">A factory method to create instances of type T.</param>
+        /// <param name="primaryKeyGetter">A function to get the primary key of type T.</param>
+        /// <param name="primaryKeySetter">An action to set the primary key of type T.</param>
+        /// <param name="fetchQueryToken">An optional query token for fetching data.</param>
+        /// <param name="fetchByParentIdQueryToken">An optional query token for fetching data by parent ID.</param>
+        /// <param name="fetchAllQueryToken">An optional query token for fetching all data.</param>
+        /// <param name="initQueryToken">An optional initialization query token.</param>
+        /// <param name="scopeIsFlag">Indicates whether the scope is a flag.</param>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="parentIdFieldName"/>,
+        /// <paramref name="primaryKeyGetter"/>, or <paramref name="primaryKeySetter"/> are null.</exception>
+        /// <returns>
+        /// A new instance of <see cref="IdentityMapChildGuid{T}"/>.
+        /// </returns>
         public IdentityMapChildGuid(string tableName, string primaryKeyFieldName,
-            string primaryKeyPropName, string parentIdFieldName, Func<T> factoryMethod, Func<T, Guid?> primaryKeyGetter,
-            Action<T, Guid?> primaryKeySetter, string fetchQueryToken = null, string fetchByParentIdQueryToken = null,
-            string fetchAllQueryToken = null, string initQueryToken = null, bool scopeIsFlag = false)
-            : base(tableName, parentIdFieldName, primaryKeyFieldName, primaryKeyPropName,
-                false, fetchQueryToken, fetchByParentIdQueryToken, fetchAllQueryToken,
-                initQueryToken, null, scopeIsFlag, factoryMethod)
+                    string primaryKeyPropName, string parentIdFieldName, Func<T> factoryMethod, Func<T, Guid?> primaryKeyGetter,
+                    Action<T, Guid?> primaryKeySetter, string fetchQueryToken = null, string fetchByParentIdQueryToken = null,
+                    string fetchAllQueryToken = null, string initQueryToken = null, bool scopeIsFlag = false)
+                    : base(tableName, parentIdFieldName, primaryKeyFieldName, primaryKeyPropName,
+                        false, fetchQueryToken, fetchByParentIdQueryToken, fetchAllQueryToken,
+                        initQueryToken, null, scopeIsFlag, factoryMethod)
         {
             if (parentIdFieldName.IsNullOrWhiteSpace()) throw new ArgumentNullException(nameof(parentIdFieldName));
             PrimaryKeyGetter = primaryKeyGetter ?? throw new ArgumentNullException(nameof(primaryKeyGetter));
