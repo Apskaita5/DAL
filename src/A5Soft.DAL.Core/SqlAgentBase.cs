@@ -144,6 +144,8 @@ namespace A5Soft.DAL.Core
             return GetCopy();
         }
 
+        public abstract Task<HealthCheckResult> GetServerHealthAsync();
+
         #endregion
 
         #region Transactions        

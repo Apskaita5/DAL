@@ -535,6 +535,24 @@ namespace A5Soft.DAL.Core.MicroOrm.Core
 
             map.SetAuditFieldsForInsert(instance, userId);
 
+            if (map.HasChildren)
+            {
+                await Agent.ExecuteInTransactionAsync(async () =>
+                {
+                    await DoInsertAsync(map, instance, extraParameters);
+                    await map.SaveChildrenAsync(instance, userId, null, this)
+                    .ConfigureAwait(false);
+                });
+            }
+            else
+            {
+                await DoInsertAsync(map, instance, extraParameters);
+            }
+        }
+
+        private async Task DoInsertAsync<T>(OrmEntityMap<T> map, T instance, SqlParam[] extraParameters)
+            where T : class
+        {
             if (map.PrimaryKeyAutoIncrement)
             {
                 var newPrimaryKey = await Agent.ExecuteInsertRawAsync(
@@ -552,8 +570,6 @@ namespace A5Soft.DAL.Core.MicroOrm.Core
                     .ConfigureAwait(false);
                 map.UpdatePrimaryKey(instance);
             }
-
-            await map.SaveChildrenAsync(instance, userId, null, this).ConfigureAwait(false);
         }
 
         /// <inheritdoc cref="IOrmService.ExecuteInsertChildAsync{T}"/>
@@ -596,14 +612,33 @@ namespace A5Soft.DAL.Core.MicroOrm.Core
 
             map.SetAuditFieldsForUpdate(instance, userId);
 
+            if (map.HasChildren)
+            {
+                return await Agent.FetchInTransactionAsync(async () =>
+                {
+                    var result = await DoUpdateAsync(map, instance, scope);
+
+                    await map.SaveChildrenAsync(instance, userId, scope, this)
+                        .ConfigureAwait(false);
+
+                    return result;
+                });
+            }
+            else
+            {
+                return await DoUpdateAsync(map, instance, scope);
+            }
+        }
+
+        private async Task<int> DoUpdateAsync<T>(OrmEntityMap<T> map, T instance, int? scope)
+            where T : class
+        {
             var result = await Agent.ExecuteCommandRawAsync(
                 map.GetOrAddUpdateStatement(scope, GetUpdateStatement),
                 map.GetParamsForUpdate(instance, scope))
                 .ConfigureAwait(false);
 
             if (map.PrimaryKeyUpdatable) map.UpdatePrimaryKey(instance);
-
-            await map.SaveChildrenAsync(instance, userId, scope, this).ConfigureAwait(false);
 
             return result;
         }

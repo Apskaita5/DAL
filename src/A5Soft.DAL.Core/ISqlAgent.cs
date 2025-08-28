@@ -136,6 +136,12 @@ namespace A5Soft.DAL.Core
         /// that are defined in a different class (if any)</param>
         IOrmService GetDefaultOrmService(Dictionary<Type, Type> customPocoMaps);
 
+        /// <summary>
+        /// Gets an sql server health status.
+        /// </summary>
+        /// <returns>an sql server health status</returns>
+        Task<HealthCheckResult> GetServerHealthAsync();
+
         #region Transactions
 
         /// <summary>

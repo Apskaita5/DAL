@@ -130,6 +130,25 @@ namespace A5Soft.DAL.SQLite
         /// <inheritdoc cref="ISqlAgent.GetCopy"/>
         public override SqlAgentBase GetCopy() => new SqliteAgent(this);
 
+        /// <inheritdoc cref="ISqlAgent.GetServerHealthAsync"/>
+        public override async Task<HealthCheckResult> GetServerHealthAsync()
+        {
+            try
+            {
+                using (var conn = await OpenConnectionAsync().ConfigureAwait(false))
+                {
+                    var result = new HealthCheckResult(false,
+                        $"SQLite v. {conn.ServerVersion}. Memory used {conn.MemoryUsed}B.");
+                    conn.Close();
+                    return result;
+                }
+            }
+            catch (Exception ex)
+            {
+                return new HealthCheckResult(ex);
+            }
+        }
+
         #endregion
 
         #region Transactions

@@ -10,7 +10,6 @@ namespace A5Soft.DAL.Core.MicroOrm
     /// <typeparam name="T">a type of the business object that the field belongs to</typeparam>
     public sealed class FieldMapGuid<T> : ManagedOrmFieldMapBase<T, Guid> where T : class
     {
-
         /// <summary>
         /// for editable field
         /// </summary>
@@ -68,6 +67,5 @@ namespace A5Soft.DAL.Core.MicroOrm
         {
             ValueSetter(instance, reader.GetGuid(PropName));
         }
-
     }
 }

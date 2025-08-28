@@ -586,6 +586,5 @@ namespace A5Soft.DAL.Core.MicroOrm.Core
 
             return fields;
         }
-
     }
 }
