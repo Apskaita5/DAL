@@ -19,8 +19,9 @@ namespace A5Soft.DAL.SQLite
         /// Creates a new instance of SQLite micro ORM service.
         /// </summary>
         /// <param name="agent">an SQLite agent to use for ORM services</param>
-        public SqliteOrmService(SqliteAgent agent, Dictionary<Type, Type> customPocoMaps)
-            : base(agent, customPocoMaps) { }
+        public SqliteOrmService(SqliteAgent agent, Dictionary<Type, Type> customPocoMaps,
+            ILookupResolver lookupResolver)
+            : base(agent, customPocoMaps, lookupResolver) { }
 
 
         protected override string GetSelectByParentIdQuery<T>(OrmEntityMap<T> map)

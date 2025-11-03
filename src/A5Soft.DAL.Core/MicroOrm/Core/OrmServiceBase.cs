@@ -12,6 +12,7 @@ namespace A5Soft.DAL.Core.MicroOrm.Core
     public abstract class OrmServiceBase : IOrmService
     {
         private readonly Dictionary<Type, Type> _customPocoMaps;
+        private readonly OrmServiceLookupResolver _lookupResolver;
         private static readonly ConcurrentDictionary<Type, object> _maps =
             new ConcurrentDictionary<Type, object>(Environment.ProcessorCount * 2, 1000);
 
@@ -35,7 +36,7 @@ namespace A5Soft.DAL.Core.MicroOrm.Core
         /// type should match Orm service implementation type</param>
         /// <param name="customPocoMaps">custom (type) maps for POCO business classes
         /// that are defined in a different class</param>
-        protected OrmServiceBase(ISqlAgent agent, Dictionary<Type, Type> customPocoMaps)
+        protected OrmServiceBase(ISqlAgent agent, Dictionary<Type, Type> customPocoMaps, ILookupResolver lookupResolver)
         {
             Agent = agent ?? throw new ArgumentNullException(nameof(agent));
             _customPocoMaps = customPocoMaps;
@@ -43,6 +44,7 @@ namespace A5Soft.DAL.Core.MicroOrm.Core
             if (!Agent.SqlImplementationId.EqualsByConvention(SqlImplementationId))
                 throw new ArgumentException(string.Format(Properties.Resources.SqlAgentAndOrmServiceTypeMismatchException,
                     Agent.SqlImplementationId, SqlImplementationId), nameof(agent));
+            _lookupResolver = new OrmServiceLookupResolver(this, lookupResolver);
         }
 
 
@@ -64,7 +66,7 @@ namespace A5Soft.DAL.Core.MicroOrm.Core
                 if (!await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
                     return null;
 
-                result = map.LoadInstance(reader);
+                result = await map.LoadInstanceAsync(reader, _lookupResolver);
             }
             finally
             {
@@ -91,7 +93,7 @@ namespace A5Soft.DAL.Core.MicroOrm.Core
             {
                 while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
                 {
-                    result.Add(map.LoadInstance(reader));
+                    result.Add(await map.LoadInstanceAsync(reader, _lookupResolver));
                 }
             }
             finally
@@ -125,7 +127,7 @@ namespace A5Soft.DAL.Core.MicroOrm.Core
 
                 while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
                 {
-                    result.Add(map.LoadInstance(reader));
+                    result.Add(await map.LoadInstanceAsync(reader, _lookupResolver));
                 }
 
                 return result;
@@ -151,7 +153,7 @@ namespace A5Soft.DAL.Core.MicroOrm.Core
 
                 while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
                 {
-                    result.Add(map.LoadInstance(reader));
+                    result.Add(await map.LoadInstanceAsync(reader, _lookupResolver));
                 }
 
                 return result;
@@ -175,7 +177,7 @@ namespace A5Soft.DAL.Core.MicroOrm.Core
             {
                 while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
                 {
-                    result.Add(map.LoadInstance(reader));
+                    result.Add(await map.LoadInstanceAsync(reader, _lookupResolver));
                 }
             }
             finally
@@ -366,7 +368,7 @@ namespace A5Soft.DAL.Core.MicroOrm.Core
                     throw new InvalidOperationException(
                         $"Entity of type {typeof(T).FullName} identified by {id} does not exist in database.");
 
-                LoadObjectFields(instance, reader);
+                await LoadObjectFieldsAsync(instance, reader);
             }
             finally
             {
@@ -375,25 +377,25 @@ namespace A5Soft.DAL.Core.MicroOrm.Core
         }
 
         /// <inheritdoc cref="o:IOrmService.LoadObjectFields{T}"/>
-        public void LoadObjectFields<T>(T instance, LightDataRow databaseRow) where T : class
+        public async Task LoadObjectFieldsAsync<T>(T instance, LightDataRow databaseRow) where T : class
         {
             if (instance.IsNull()) throw new ArgumentNullException(nameof(instance));
             if (databaseRow.IsNull()) throw new ArgumentNullException(nameof(databaseRow));
 
             var map = GetOrCreateMap<T>();
 
-            map.LoadValues(instance, databaseRow);
+            await map.LoadValuesAsync(instance, databaseRow, _lookupResolver);
         }
 
         /// <inheritdoc cref="o:IOrmService.LoadObjectFields{T}"/>
-        public void LoadObjectFields<T>(T instance, ILightDataReader reader) where T : class
+        public async Task LoadObjectFieldsAsync<T>(T instance, ILightDataReader reader) where T : class
         {
             if (instance.IsNull()) throw new ArgumentNullException(nameof(instance));
             if (reader.IsNull()) throw new ArgumentNullException(nameof(reader));
 
             var map = GetOrCreateMap<T>();
 
-            map.LoadValues(instance, reader);
+            await map.LoadValuesAsync(instance, reader, _lookupResolver);
         }
 
         /// <summary>
@@ -445,7 +447,7 @@ namespace A5Soft.DAL.Core.MicroOrm.Core
                 if (!await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
                     throw new EntityContextNotFoundException(typeof(T), map.InitQueryToken, parameters);
 
-                return map.InitInstance(reader);
+                return await map.InitInstanceAsync(reader, _lookupResolver);
             }
             finally
             {
@@ -491,7 +493,7 @@ namespace A5Soft.DAL.Core.MicroOrm.Core
                 if (!await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
                     throw new EntityContextNotFoundException(typeof(T), map.InitQueryToken, parameters);
 
-                InitObjectFields(instance, reader);
+                await InitObjectFieldsAsync(instance, reader);
             }
             finally
             {
@@ -500,25 +502,25 @@ namespace A5Soft.DAL.Core.MicroOrm.Core
         }
 
         /// <inheritdoc cref="o:IOrmService.InitObjectFields{T}"/>
-        public void InitObjectFields<T>(T instance, LightDataRow databaseRow) where T : class
+        public async Task InitObjectFieldsAsync<T>(T instance, LightDataRow databaseRow) where T : class
         {
             if (instance.IsNull()) throw new ArgumentNullException(nameof(instance));
             if (databaseRow.IsNull()) throw new ArgumentNullException(nameof(databaseRow));
 
             var map = GetOrCreateMap<T>();
 
-            map.InitValues(instance, databaseRow);
+            await map.InitValuesAsync(instance, databaseRow, _lookupResolver);
         }
 
         /// <inheritdoc cref="o:IOrmService.InitObjectFields{T}"/>
-        public void InitObjectFields<T>(T instance, ILightDataReader reader) where T : class
+        public async Task InitObjectFieldsAsync<T>(T instance, ILightDataReader reader) where T : class
         {
             if (instance.IsNull()) throw new ArgumentNullException(nameof(instance));
             if (reader.IsNull()) throw new ArgumentNullException(nameof(reader));
 
             var map = GetOrCreateMap<T>();
 
-            map.InitValues(instance, reader);
+            await map.InitValuesAsync(instance, reader, _lookupResolver);
         }
 
         #endregion

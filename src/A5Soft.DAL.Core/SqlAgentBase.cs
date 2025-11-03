@@ -4,6 +4,7 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using A5Soft.DAL.Core.DbSchema;
+using A5Soft.DAL.Core.MicroOrm;
 
 namespace A5Soft.DAL.Core
 {
@@ -130,7 +131,8 @@ namespace A5Soft.DAL.Core
         public abstract ISchemaManager GetDefaultSchemaManager();
 
         /// <inheritdoc cref="ISqlAgent.GetDefaultOrmService"/>
-        public abstract IOrmService GetDefaultOrmService(Dictionary<Type, Type> customPocoMaps);
+        public abstract IOrmService GetDefaultOrmService(Dictionary<Type, Type> customPocoMaps,
+            ILookupResolver lookupResolver);
 
         /// <summary>
         /// Gets a clean copy (i.e. only connection data, not connection itself) of the SqlAgent instance

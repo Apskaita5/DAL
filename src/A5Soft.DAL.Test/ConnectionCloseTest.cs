@@ -20,7 +20,7 @@ namespace A5Soft.DAL.Test
 
             _connString = configuration["ConnString"];
             var agent = new MySqlAgent(_connString, "test_dal_db", null);
-            _service = agent.GetDefaultOrmService(null);
+            _service = agent.GetDefaultOrmService(null, null);
         }
 
 

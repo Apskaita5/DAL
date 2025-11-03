@@ -137,7 +137,7 @@ namespace A5Soft.DAL.Core
         /// <param name="databaseRow">data that was fetched either by 
         /// <see cref="FetchTableAsync{T}"/>, <see cref="FetchTableByParentAsync{T}"/>
         /// or <see cref="FetchTableForAllAsync{T}"/>.</param>
-        void LoadObjectFields<T>(T instance, LightDataRow databaseRow) where T : class;
+        Task LoadObjectFieldsAsync<T>(T instance, LightDataRow databaseRow) where T : class;
 
         /// <summary>
         /// Loads business object's fields with data from the database.
@@ -147,7 +147,7 @@ namespace A5Soft.DAL.Core
         /// <param name="reader">reader for the data that was fetched either by 
         /// <see cref="GetReaderAsync{T}"/>, <see cref="GetReaderByParentAsync{T}"/>
         /// or <see cref="GetReaderForAllAsync{T}"/>.</param>
-        void LoadObjectFields<T>(T instance, ILightDataReader reader) where T : class;
+        Task LoadObjectFieldsAsync<T>(T instance, ILightDataReader reader) where T : class;
 
         /// <summary>
         /// Creates a new business object of type T and initializes it with the database data using integrated micro ORM.
@@ -193,7 +193,7 @@ namespace A5Soft.DAL.Core
         /// <param name="instance">an instance of the business object to init the fields for</param>
         /// <param name="databaseRow">data that was fetched by 
         /// <see cref="FetchInitTableAsync{T}(SqlParam[], CancellationToken)"/>.</param>
-        void InitObjectFields<T>(T instance, LightDataRow databaseRow) where T : class;
+        Task InitObjectFieldsAsync<T>(T instance, LightDataRow databaseRow) where T : class;
 
         /// <summary>
         /// Initializes new business object's fields with data from the database.
@@ -202,7 +202,7 @@ namespace A5Soft.DAL.Core
         /// <param name="instance">an instance of the business object to init the fields for</param>
         /// <param name="reader">reader for the data that was fetched by 
         /// <see cref="GetInitReaderAsync{T}(SqlParam[], CancellationToken)"/>.</param>
-        void InitObjectFields<T>(T instance, ILightDataReader reader) where T : class;
+        Task InitObjectFieldsAsync<T>(T instance, ILightDataReader reader) where T : class;
 
         /// <summary>
         /// Inserts properties of a business object of type T into the database using integrated micro ORM.
@@ -252,6 +252,5 @@ namespace A5Soft.DAL.Core
         /// <typeparam name="T">a type of a business object to delete</typeparam>
         /// <param name="primaryKey">a primary key value of the business object to delete</param>
         Task<int> ExecuteDeleteAsync<T>(object primaryKey) where T : class;
-
     }
 }

@@ -124,8 +124,9 @@ namespace A5Soft.DAL.SQLite
         public override ISchemaManager GetDefaultSchemaManager() => new SqliteSchemaManager(this);
 
         /// <inheritdoc cref="ISqlAgent.GetDefaultOrmService"/>
-        public override IOrmService GetDefaultOrmService(Dictionary<Type, Type> customPocoMaps)
-            => new SqliteOrmService(this, customPocoMaps);
+        public override IOrmService GetDefaultOrmService(Dictionary<Type, Type> customPocoMaps,
+            ILookupResolver lookupResolver)
+            => new SqliteOrmService(this, customPocoMaps, lookupResolver);
 
         /// <inheritdoc cref="ISqlAgent.GetCopy"/>
         public override SqlAgentBase GetCopy() => new SqliteAgent(this);

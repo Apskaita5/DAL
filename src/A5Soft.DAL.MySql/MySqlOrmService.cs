@@ -23,8 +23,10 @@ namespace A5Soft.DAL.MySql
         /// <param name="agent">a MySql agent to use for ORM service</param>
         /// <param name="customPocoMaps">custom (type) maps for POCO business classes
         /// that are defined in a different class</param>
-        public MySqlOrmService(MySqlAgent agent, Dictionary<Type, Type> customPocoMaps) 
-            : base(agent, customPocoMaps) { }
+        /// <param name="lookupResolver">a resolver for lookup values</param>
+        public MySqlOrmService(MySqlAgent agent, Dictionary<Type, Type> customPocoMaps,
+            ILookupResolver lookupResolver)
+            : base(agent, customPocoMaps, lookupResolver) { }
 
 
         protected override string GetSelectByParentIdQuery<T>(OrmEntityMap<T> map)

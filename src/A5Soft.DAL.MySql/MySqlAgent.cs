@@ -194,8 +194,9 @@ namespace A5Soft.DAL.MySql
         public override ISchemaManager GetDefaultSchemaManager() => new MySqlSchemaManager(this);
 
         /// <inheritdoc cref="ISqlAgent.GetDefaultOrmService"/>
-        public override IOrmService GetDefaultOrmService(Dictionary<Type, Type> customPocoMaps)
-            => new MySqlOrmService(this, customPocoMaps);
+        public override IOrmService GetDefaultOrmService(Dictionary<Type, Type> customPocoMaps,
+            ILookupResolver lookupResolver)
+            => new MySqlOrmService(this, customPocoMaps, lookupResolver);
 
         /// <inheritdoc cref="ISqlAgent.GetCopy"/>
         public override SqlAgentBase GetCopy() => new MySqlAgent(this);

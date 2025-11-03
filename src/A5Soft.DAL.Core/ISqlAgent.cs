@@ -4,6 +4,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using A5Soft.DAL.Core.DbSchema;
+using A5Soft.DAL.Core.MicroOrm;
 
 namespace A5Soft.DAL.Core
 {
@@ -134,7 +135,8 @@ namespace A5Soft.DAL.Core
         /// </summary>
         /// <param name="customPocoMaps">custom (type) maps for POCO business classes
         /// that are defined in a different class (if any)</param>
-        IOrmService GetDefaultOrmService(Dictionary<Type, Type> customPocoMaps);
+        IOrmService GetDefaultOrmService(Dictionary<Type, Type> customPocoMaps,
+            ILookupResolver lookupResolver);
 
         /// <summary>
         /// Gets an sql server health status.
