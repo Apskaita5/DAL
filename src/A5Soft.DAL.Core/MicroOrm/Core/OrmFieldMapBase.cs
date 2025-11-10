@@ -9,6 +9,7 @@ namespace A5Soft.DAL.Core.MicroOrm.Core
     /// <typeparam name="T">a type of the business object that the field belongs to</typeparam>
     public abstract class OrmFieldMapBase<T> where T : class
     {
+        protected OrmFieldMapBase() { }
 
         /// <summary>
         /// create a new description how a business object property (field) is persisted in a database;
