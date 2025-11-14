@@ -10,7 +10,6 @@ namespace A5Soft.DAL.Core.MicroOrm
     /// <typeparam name="T">a type of the business object that the field belongs to</typeparam>
     public sealed class FieldMapUpdatedAt<T> : ManagedOrmFieldMapBase<T, DateTime> where T : class
     {
-
         /// <summary>
         /// create a new description how a business object audit property (field) for last update timestamp is persisted in a database;
         /// </summary>
@@ -22,7 +21,7 @@ namespace A5Soft.DAL.Core.MicroOrm
         /// with a name specified in the PropName property</param>
         public FieldMapUpdatedAt(string dbFieldName, string propName, Action<T, DateTime> valueSetter,
             Func<T, DateTime> valueGetter)
-            : base(dbFieldName, propName, FieldPersistenceType.Read | FieldPersistenceType.Insert 
+            : base(dbFieldName, propName, FieldPersistenceType.Read | FieldPersistenceType.Insert
                 | FieldPersistenceType.Update, valueSetter, valueGetter, null) { }
 
         internal override SqlParam GetParam(T instance)
@@ -44,11 +43,10 @@ namespace A5Soft.DAL.Core.MicroOrm
         {
             ValueSetter(instance, Extensions.GetCurrentTimeStamp());
         }
-  
+
         internal void InitValue(T instance, DateTime insertTimeStamp)
         {
             ValueSetter(instance, insertTimeStamp);
         }
-
     }
 }
